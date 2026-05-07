@@ -1,0 +1,6 @@
+node_modules/
+dist/
+dist-electron/
+relay/node_modules/
+.env.local
+.env
