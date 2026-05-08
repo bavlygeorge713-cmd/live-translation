@@ -16,25 +16,78 @@ export function ViewerPage() {
   const [sourceLang, setSourceLang] = useState<string>("");
   const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
   const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
   const selectedVoiceURIRef = useRef("");
   selectedVoiceURIRef.current = selectedVoiceURI;
   const ttsEnabledRef = useRef(true);
   ttsEnabledRef.current = ttsEnabled;
+  const audioUnlockedRef = useRef(false);
+  audioUnlockedRef.current = audioUnlocked;
   const lastSpokenChunkRef = useRef("");
+  const lastSpokenInterimRef = useRef("");
+  const initializedRef = useRef(false); // true after the first (cached) message is skipped
+  const localTextRef = useRef("");      // viewer-local accumulated text, starts empty on join
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const handleUnlockAudio = () => {
+    window.speechSynthesis.cancel(); // warms up the audio API (requires user gesture)
+    setAudioUnlocked(true);
+  };
+
   useEffect(() => {
-    if (!lastMessage || lastMessage.type !== "translation" || !lastMessage.text) return;
-    setDisplayText(lastMessage.text);
+    if (!lastMessage || lastMessage.type !== "translation") return;
     setTargetLang(lastMessage.targetLang ?? "");
     setSourceLang(lastMessage.sourceLang ?? "");
 
-    // Speak the new chunk (final translation phrase only, not interim)
-    const chunk = lastMessage.chunk;
-    if (chunk && chunk !== lastSpokenChunkRef.current && ttsEnabledRef.current) {
+    const chunk = lastMessage.chunk ?? "";
+    const interimChunk = lastMessage.interimChunk ?? "";
+    const bcp47 = LANGUAGES.find((l) => l.code === lastMessage.targetLang)?.bcp47 ?? "en-US";
+    const voiceURI = selectedVoiceURIRef.current || undefined;
+
+    // First message is the Redis-cached state from before this viewer joined.
+    // Mark its chunk as already-seen and skip display so the viewer starts clean.
+    if (!initializedRef.current) {
+      initializedRef.current = true;
       lastSpokenChunkRef.current = chunk;
-      const bcp47 = LANGUAGES.find((l) => l.code === lastMessage.targetLang)?.bcp47 ?? "en-US";
-      ttsRef.current.speak(chunk, bcp47, 1.0, selectedVoiceURIRef.current || undefined);
+      return;
+    }
+
+    // ── Display (viewer-local accumulation, starts empty on join) ────────────
+    const isNewChunk = chunk && chunk !== lastSpokenChunkRef.current;
+    if (isNewChunk) {
+      localTextRef.current = localTextRef.current ? localTextRef.current + " " + chunk : chunk;
+    }
+    setDisplayText(
+      interimChunk && !isNewChunk
+        ? (localTextRef.current ? localTextRef.current + " " + interimChunk : interimChunk)
+        : localTextRef.current
+    );
+
+    // ── TTS ─────────────────────────────────────────────────────────────────
+    if (!ttsEnabledRef.current || !audioUnlockedRef.current) {
+      if (isNewChunk) lastSpokenChunkRef.current = chunk;
+      return;
+    }
+
+    // Final phrase: play unless the interim already spoke this exact text.
+    // We check lastSpokenInterimRef regardless of whether TTS is still playing —
+    // by the time the final arrives, TTS may have already finished the interim.
+    if (isNewChunk) {
+      lastSpokenChunkRef.current = chunk;
+      const interimAlreadySpoke =
+        lastSpokenInterimRef.current.trim().toLowerCase() === chunk.trim().toLowerCase();
+      lastSpokenInterimRef.current = ""; // always reset so repeated phrases work next time
+      if (!interimAlreadySpoke) {
+        ttsRef.current.speak(chunk, bcp47, 1.0, voiceURI);
+      }
+      return;
+    }
+
+    // Interim phrase: fills silence while speaker is mid-sentence.
+    // Only fires when TTS is idle to avoid choppy restarts.
+    if (interimChunk && interimChunk !== lastSpokenInterimRef.current && !window.speechSynthesis.speaking) {
+      lastSpokenInterimRef.current = interimChunk;
+      ttsRef.current.speak(interimChunk, bcp47, 1.0, voiceURI);
     }
   }, [lastMessage]);
 
@@ -73,6 +126,24 @@ export function ViewerPage() {
 
   return (
     <div className="h-screen bg-[#08080f] flex flex-col text-white overflow-hidden">
+
+      {/* ── Tap-to-start overlay (browser requires a user gesture before TTS works) ── */}
+      {!audioUnlocked && (
+        <div
+          onClick={handleUnlockAudio}
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center cursor-pointer bg-[#08080f]"
+        >
+          <motion.div
+            animate={{ scale: [1, 1.18, 1], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="mb-7"
+          >
+            <Volume2 className="size-16 text-blue-400" />
+          </motion.div>
+          <p className="text-white text-2xl font-semibold">Tap to start</p>
+          <p className="text-slate-500 text-sm mt-2">Live translation with voice</p>
+        </div>
+      )}
 
       {/* ── Top bar ─────────────────────────────────────────────────────────── */}
       <div className="shrink-0 border-b border-white/[0.06]">

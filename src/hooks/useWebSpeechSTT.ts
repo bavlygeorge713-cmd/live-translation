@@ -32,7 +32,8 @@ export function useWebSpeechSTT() {
     (
       onInterim: (text: string) => void,
       onFinal: (text: string) => void,
-      lang = "en-US"
+      lang = "en-US",
+      onError?: (error: string) => void,
     ): boolean => {
       const SR: SpeechRecognitionCtor =
         (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -62,6 +63,7 @@ export function useWebSpeechSTT() {
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         if (event.error !== "no-speech" && event.error !== "aborted") {
           console.warn("[WebSpeech error]", event.error);
+          onError?.(event.error);
         }
       };
 

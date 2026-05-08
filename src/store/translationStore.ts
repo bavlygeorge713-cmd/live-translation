@@ -16,7 +16,8 @@ interface Store {
   processingState: ProcessingState;
   transcribedText: string;
   translatedText: string;
-  latestChunk: string;
+  latestChunk: string;    // final phrase only — used for history & viewer final TTS
+  interimChunk: string;   // current interim phrase — triggers viewer TTS when idle
   detectedLang: string;
   isPlaying: boolean;
   error: string | null;
@@ -33,6 +34,7 @@ interface Store {
   setTranscribedText: (t: string) => void;
   setTranslatedText: (t: string) => void;
   setLatestChunk: (t: string) => void;
+  setInterimChunk: (t: string) => void;
   setDetectedLang: (l: string) => void;
   setIsPlaying: (v: boolean) => void;
   setError: (e: string | null) => void;
@@ -53,6 +55,7 @@ export const useStore = create<Store>((set, get) => ({
   transcribedText: "",
   translatedText: "",
   latestChunk: "",
+  interimChunk: "",
   detectedLang: "",
   isPlaying: false,
   error: null,
@@ -68,6 +71,7 @@ export const useStore = create<Store>((set, get) => ({
   setTranscribedText: (t) => set({ transcribedText: t }),
   setTranslatedText: (t) => set({ translatedText: t }),
   setLatestChunk: (t) => set({ latestChunk: t }),
+  setInterimChunk: (t) => set({ interimChunk: t }),
   setDetectedLang: (l) => set({ detectedLang: l }),
   setIsPlaying: (v) => set({ isPlaying: v }),
   setError: (e) => set({ error: e }),
@@ -79,5 +83,5 @@ export const useStore = create<Store>((set, get) => ({
     if (sourceLang !== "auto") set({ sourceLang: targetLang, targetLang: sourceLang });
   },
   reset: () =>
-    set({ transcribedText: "", translatedText: "", latestChunk: "", detectedLang: "", error: null }),
+    set({ transcribedText: "", translatedText: "", latestChunk: "", interimChunk: "", detectedLang: "", error: null }),
 }));

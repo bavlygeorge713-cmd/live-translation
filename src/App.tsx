@@ -16,15 +16,27 @@ export default function App() {
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
 
   const { translate } = useOnlineTranslation();
-  const { translatedText, latestChunk, sourceLang, targetLang } = useStore();
+  const { translatedText, latestChunk, interimChunk, sourceLang, targetLang } = useStore();
 
   const { connected, viewerCount, send } = useBroadcast("sender");
-  const prevBroadcastRef = useRef("");
+
+  // Broadcast final translation chunks immediately as they arrive
+  const prevChunkRef = useRef("");
   useEffect(() => {
-    if (!translatedText || translatedText === prevBroadcastRef.current) return;
-    prevBroadcastRef.current = translatedText;
-    send({ type: "translation", text: translatedText, chunk: latestChunk || undefined, sourceLang, targetLang });
-  }, [translatedText, latestChunk, sourceLang, targetLang, send]);
+    if (latestChunk === prevChunkRef.current) return;
+    prevChunkRef.current = latestChunk;
+    if (!latestChunk) return; // session reset — just sync the ref, no broadcast
+    send({ type: "translation", text: translatedText, chunk: latestChunk, sourceLang, targetLang });
+  }, [latestChunk, translatedText, sourceLang, targetLang, send]);
+
+  // Broadcast interim translation updates as they arrive
+  const prevInterimRef = useRef("");
+  useEffect(() => {
+    if (interimChunk === prevInterimRef.current) return;
+    prevInterimRef.current = interimChunk;
+    if (!interimChunk) return; // session reset — just sync the ref, no broadcast
+    send({ type: "translation", text: translatedText, interimChunk, sourceLang, targetLang });
+  }, [interimChunk, translatedText, sourceLang, targetLang, send]);
 
   return (
     <div className="min-h-screen flex flex-col">

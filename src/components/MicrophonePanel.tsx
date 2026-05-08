@@ -32,6 +32,7 @@ export function MicrophonePanel({ onStream, translate }: Props) {
   const interimDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const interimTranslatingRef = useRef(false);
   const lastInterimRef = useRef(""); // the last interim text we debounced on
+  const lastInterimTranslateTimeRef = useRef(0); // throttle: ms of last interim translate
 
   // ── Recording guard ──────────────────────────────────────────────────────────
   const isRecordingRef = useRef(false);
@@ -88,6 +89,7 @@ export function MicrophonePanel({ onStream, translate }: Props) {
       if (!isRecordingRef.current) return;
       const t = translated.trim();
       if (!t) return;
+      storeRef.current.setInterimChunk(t); // lets viewer speak first words immediately
       // Show: finalized session translation + live interim preview
       const combined = sessionTranslationRef.current
         ? sessionTranslationRef.current + " " + t
@@ -177,14 +179,23 @@ export function MicrophonePanel({ onStream, translate }: Props) {
     storeRef.current.setTranscribedText(display);
     storeRef.current.setProcessingState("transcribing");
 
-    // Debounce interim translation — fires 500ms after speech stops momentarily
+    // Hybrid throttle+debounce: translate immediately if 600ms has passed since
+    // the last interim translation (so it fires during continuous speech too),
+    // otherwise schedule 200ms after the last word arrives.
     lastInterimRef.current = interimText;
     if (interimDebounceRef.current) clearTimeout(interimDebounceRef.current);
-    interimDebounceRef.current = setTimeout(() => {
-      if (isRecordingRef.current && lastInterimRef.current === interimText) {
-        doInterimTranslate(interimText);
-      }
-    }, 500);
+    const now = Date.now();
+    if (now - lastInterimTranslateTimeRef.current >= 600) {
+      lastInterimTranslateTimeRef.current = now;
+      doInterimTranslate(interimText);
+    } else {
+      interimDebounceRef.current = setTimeout(() => {
+        if (isRecordingRef.current && lastInterimRef.current === interimText) {
+          lastInterimTranslateTimeRef.current = Date.now();
+          doInterimTranslate(interimText);
+        }
+      }, 200);
+    }
   }, [doInterimTranslate]);
 
   const handleFinal = useCallback((finalText: string) => {
@@ -223,6 +234,7 @@ export function MicrophonePanel({ onStream, translate }: Props) {
       setVisualStream(null);
       setIsRecording(false);
       onStream(null);
+      storeRef.current.setInterimChunk("");
       storeRef.current.setProcessingState("idle");
     } else {
       storeRef.current.setError(null);
@@ -231,8 +243,12 @@ export function MicrophonePanel({ onStream, translate }: Props) {
       translationQueueRef.current = [];
       queueRunningRef.current = false;
       lastInterimRef.current = "";
+      lastInterimTranslateTimeRef.current = 0;
+      interimTranslatingRef.current = false;
       storeRef.current.setTranscribedText("");
       storeRef.current.setTranslatedText("");
+      storeRef.current.setLatestChunk("");
+      storeRef.current.setInterimChunk("");
 
       if (!webSpeech.isSupported) {
         setError("Live speech requires Chrome or Edge.");
@@ -241,12 +257,26 @@ export function MicrophonePanel({ onStream, translate }: Props) {
 
       const srcInfo = LANGUAGES.find((l) => l.code === latestRef.current.sourceLang);
       const langCode = srcInfo?.bcp47 || "en-US";
-      const started = webSpeech.start(handleInterim, handleFinal, langCode);
+      const started = webSpeech.start(handleInterim, handleFinal, langCode, (errCode) => {
+        if (!isRecordingRef.current) return;
+        const msg =
+          errCode === "not-allowed" ? "Microphone permission denied. Allow mic access and try again." :
+          errCode === "network" ? "Speech recognition network error. Check your internet connection." :
+          errCode === "audio-capture" ? "Microphone not found or in use by another app." :
+          `Speech recognition error: ${errCode}`;
+        setError(msg);
+        storeRef.current.setError(msg);
+      });
 
       if (!started) {
         setError("Microphone access denied. Check browser permissions.");
         return;
       }
+
+      // Set recording flag BEFORE getUserMedia so speech callbacks don't get
+      // silently dropped during the async mic-permission prompt.
+      isRecordingRef.current = true;
+      setIsRecording(true);
 
       try {
         const vs = await navigator.mediaDevices.getUserMedia({
@@ -259,9 +289,6 @@ export function MicrophonePanel({ onStream, translate }: Props) {
       } catch {
         onStream(null);
       }
-
-      isRecordingRef.current = true;
-      setIsRecording(true);
     }
   };
 
@@ -347,8 +374,8 @@ export function MicrophonePanel({ onStream, translate }: Props) {
         className="w-full"
       >
         {isRecording
-          ? <><Square className="size-4" /> Stop Recording</>
-          : <><Mic className="size-4" /> Start Recording</>
+          ? <><Square className="size-4" /> Stop Live Translation</>
+          : <><Mic className="size-4" /> Start Live Translation</>
         }
       </Button>
 

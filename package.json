@@ -11,6 +11,8 @@
     "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
+    "@upstash/redis": "^1.38.0",
+    "@vercel/kv": "^3.0.0",
     "@xenova/transformers": "^2.17.2",
     "clsx": "^2.1.1",
     "framer-motion": "^11.3.8",
@@ -47,7 +49,14 @@
       "node_modules/ws/**/*"
     ],
     "win": {
-      "target": [{ "target": "portable", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "artifactName": "HY Translator.exe",
       "signAndEditExecutable": false
     }
