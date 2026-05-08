@@ -24,7 +24,6 @@ export function ViewerPage() {
   const audioUnlockedRef = useRef(false);
   audioUnlockedRef.current = audioUnlocked;
   const lastSpokenChunkRef = useRef("");
-  const lastSpokenInterimRef = useRef("");
   const initializedRef = useRef(false); // true after the first (cached) message is skipped
   const localTextRef = useRef("");      // viewer-local accumulated text, starts empty on join
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -45,7 +44,7 @@ export function ViewerPage() {
     const voiceURI = selectedVoiceURIRef.current || undefined;
 
     // First message is the Redis-cached state from before this viewer joined.
-    // Mark its chunk as already-seen and skip display so the viewer starts clean.
+    // Mark its chunk as already-seen so the viewer starts clean.
     if (!initializedRef.current) {
       initializedRef.current = true;
       lastSpokenChunkRef.current = chunk;
@@ -57,37 +56,22 @@ export function ViewerPage() {
     if (isNewChunk) {
       localTextRef.current = localTextRef.current ? localTextRef.current + " " + chunk : chunk;
     }
+    // Show accumulated finals; append interim preview while no new final is arriving
     setDisplayText(
       interimChunk && !isNewChunk
         ? (localTextRef.current ? localTextRef.current + " " + interimChunk : interimChunk)
         : localTextRef.current
     );
 
-    // ── TTS ─────────────────────────────────────────────────────────────────
+    // ── TTS — speak final phrases only, never interim ─────────────────────────
     if (!ttsEnabledRef.current || !audioUnlockedRef.current) {
       if (isNewChunk) lastSpokenChunkRef.current = chunk;
       return;
     }
 
-    // Final phrase: play unless the interim already spoke this exact text.
-    // We check lastSpokenInterimRef regardless of whether TTS is still playing —
-    // by the time the final arrives, TTS may have already finished the interim.
     if (isNewChunk) {
       lastSpokenChunkRef.current = chunk;
-      const interimAlreadySpoke =
-        lastSpokenInterimRef.current.trim().toLowerCase() === chunk.trim().toLowerCase();
-      lastSpokenInterimRef.current = ""; // always reset so repeated phrases work next time
-      if (!interimAlreadySpoke) {
-        ttsRef.current.speak(chunk, bcp47, 1.0, voiceURI);
-      }
-      return;
-    }
-
-    // Interim phrase: fills silence while speaker is mid-sentence.
-    // Only fires when TTS is idle to avoid choppy restarts.
-    if (interimChunk && interimChunk !== lastSpokenInterimRef.current && !window.speechSynthesis.speaking) {
-      lastSpokenInterimRef.current = interimChunk;
-      ttsRef.current.speak(interimChunk, bcp47, 1.0, voiceURI);
+      ttsRef.current.speak(chunk, bcp47, 1.0, voiceURI);
     }
   }, [lastMessage]);
 
