@@ -75,6 +75,22 @@ export function ViewerPage() {
     }
   }, [lastMessage]);
 
+  // When the phone screen turns back on, the SSE reconnects and immediately
+  // delivers the last cached sentence — which is already stale by then.
+  // Stop any ongoing TTS and re-arm the "skip first message" guard so that
+  // stale reconnect message is absorbed as a new baseline and not spoken.
+  // The next real sentence the presenter says will be heard normally.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        ttsRef.current.stop();
+        initializedRef.current = false;
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
   // Auto-scroll to bottom as text grows
   useEffect(() => {
     if (scrollRef.current) {
