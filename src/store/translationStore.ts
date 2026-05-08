@@ -46,7 +46,7 @@ interface Store {
 
 export const useStore = create<Store>((set, get) => ({
   sourceLang: "auto",
-  targetLang: "es",
+  targetLang: "ar",
   whisperModel: "Xenova/whisper-tiny",
   speechRate: 1.0,
   translationProvider: (localStorage.getItem("hy_trans_provider") as TranslationProvider) ?? "google",
