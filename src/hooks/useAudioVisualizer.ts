@@ -13,7 +13,10 @@ export function useAudioVisualizer(stream: MediaStream | null, barCount = 28) {
   }, [barCount]);
 
   useEffect(() => {
-    if (!stream) { cleanup(); return; }
+    if (!stream) {
+      cleanup();
+      return;
+    }
 
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     const ctx = new AudioCtx();
@@ -27,7 +30,9 @@ export function useAudioVisualizer(stream: MediaStream | null, barCount = 28) {
     const tick = () => {
       analyser.getByteFrequencyData(data);
       const step = Math.max(1, Math.floor(data.length / barCount));
-      setBars(Array.from({ length: barCount }, (_, i) => (data[i * step] ?? 0) / 255));
+      setBars(
+        Array.from({ length: barCount }, (_, i) => (data[i * step] ?? 0) / 255),
+      );
       frameRef.current = requestAnimationFrame(tick);
     };
     frameRef.current = requestAnimationFrame(tick);

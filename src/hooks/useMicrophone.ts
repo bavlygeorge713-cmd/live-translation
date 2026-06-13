@@ -19,7 +19,8 @@ export function useAudioDevices() {
   useEffect(() => {
     refresh();
     navigator.mediaDevices.addEventListener("devicechange", refresh);
-    return () => navigator.mediaDevices.removeEventListener("devicechange", refresh);
+    return () =>
+      navigator.mediaDevices.removeEventListener("devicechange", refresh);
   }, [refresh]);
 
   return { devices, refresh };
@@ -68,7 +69,7 @@ export function useMicrophone() {
     async (
       onChunk: (blob: Blob) => void,
       intervalMs = 3_000,
-      deviceId?: string
+      deviceId?: string,
     ): Promise<MediaStream | null> => {
       setError(null);
       try {
@@ -87,8 +88,8 @@ export function useMicrophone() {
         setIsListening(true);
 
         const mimeType =
-          ["audio/webm;codecs=opus", "audio/webm", "audio/ogg"].find(
-            (t) => MediaRecorder.isTypeSupported(t)
+          ["audio/webm;codecs=opus", "audio/webm", "audio/ogg"].find((t) =>
+            MediaRecorder.isTypeSupported(t),
           ) ?? "";
 
         let running = true;
@@ -142,13 +143,13 @@ export function useMicrophone() {
           err instanceof DOMException && err.name === "NotAllowedError"
             ? "Microphone access denied."
             : err instanceof DOMException && err.name === "NotFoundError"
-            ? "Selected device not found."
-            : "Cannot access microphone.";
+              ? "Selected device not found."
+              : "Cannot access microphone.";
         setError(msg);
         return null;
       }
     },
-    []
+    [],
   );
 
   const stop = useCallback(() => {

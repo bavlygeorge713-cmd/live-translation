@@ -9,7 +9,9 @@ export function useSpeechSynthesis() {
     const load = () => setVoices(window.speechSynthesis.getVoices());
     load();
     window.speechSynthesis.onvoiceschanged = load;
-    return () => { window.speechSynthesis.onvoiceschanged = null; };
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
   }, []);
 
   const speak = useCallback(
@@ -23,7 +25,7 @@ export function useSpeechSynthesis() {
       const match = voiceURI
         ? voices.find((v) => v.voiceURI === voiceURI)
         : (voices.find((v) => v.lang === langBcp47) ??
-           voices.find((v) => v.lang.startsWith(langBcp47.split("-")[0])));
+          voices.find((v) => v.lang.startsWith(langBcp47.split("-")[0])));
       if (match) utterance.voice = match;
       utterance.lang = langBcp47 || "en-US";
 
@@ -34,7 +36,7 @@ export function useSpeechSynthesis() {
       utteranceRef.current = utterance;
       window.speechSynthesis.speak(utterance);
     },
-    [voices]
+    [voices],
   );
 
   const stop = useCallback(() => {
@@ -46,7 +48,7 @@ export function useSpeechSynthesis() {
   const voicesForLang = useCallback(
     (bcp47: string) =>
       voices.filter((v) => v.lang.startsWith(bcp47.split("-")[0])),
-    [voices]
+    [voices],
   );
 
   return { speak, stop, isPlaying, voices, voicesForLang };

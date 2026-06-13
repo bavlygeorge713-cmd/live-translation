@@ -25,13 +25,6 @@ export type ProcessingState =
 
 export type RecordingState = "idle" | "recording" | "stopped";
 
-export interface ModelProgress {
-  modelName: string;
-  status: "loading" | "downloading" | "ready";
-  percent: number;
-  file?: string;
-}
-
 export const LANGUAGES: Language[] = [
   { code: "auto", name: "Auto Detect", flag: "🌐", bcp47: "en-US" },
   { code: "en", name: "English", flag: "🇺🇸", bcp47: "en-US" },
@@ -61,10 +54,4 @@ export const LANGUAGES: Language[] = [
   { code: "tr", name: "Turkish", flag: "🇹🇷", bcp47: "tr-TR" },
   { code: "uk", name: "Ukrainian", flag: "🇺🇦", bcp47: "uk-UA" },
   { code: "vi", name: "Vietnamese", flag: "🇻🇳", bcp47: "vi-VN" },
-];
-
-export const WHISPER_MODELS = [
-  { id: "Xenova/whisper-tiny", name: "Tiny (~150 MB)", description: "Fastest" },
-  { id: "Xenova/whisper-base", name: "Base (~290 MB)", description: "Balanced" },
-  { id: "Xenova/whisper-small", name: "Small (~490 MB)", description: "Most accurate" },
 ];
