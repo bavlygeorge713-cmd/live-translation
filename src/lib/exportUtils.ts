@@ -22,10 +22,13 @@ export const downloadText = (entries: TranslationEntry[]) => {
       (e, i) =>
         `[${i + 1}] ${new Date(e.timestamp).toLocaleTimeString()}\n` +
         `${e.sourceLang}: ${e.originalText}\n` +
-        `${e.targetLang}: ${e.translatedText}`
+        `${e.targetLang}: ${e.translatedText}`,
     )
     .join("\n\n---\n\n");
-  triggerDownload(new Blob([content], { type: "text/plain" }), "translations.txt");
+  triggerDownload(
+    new Blob([content], { type: "text/plain" }),
+    "translations.txt",
+  );
 };
 
 export const downloadSRT = (entries: TranslationEntry[]) => {
@@ -41,7 +44,9 @@ export const downloadSRT = (entries: TranslationEntry[]) => {
 
 function toSRT(d: Date) {
   return (
-    [d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, "0")).join(":") +
+    [d.getHours(), d.getMinutes(), d.getSeconds()]
+      .map((n) => String(n).padStart(2, "0"))
+      .join(":") +
     "," +
     String(d.getMilliseconds()).padStart(3, "0")
   );
@@ -55,35 +60,19 @@ function wordsMs(text: string) {
 
 export function drawSubtitleFrame(
   ctx: CanvasRenderingContext2D,
-  text: string,        // translatedText — accumulated translated session
+  text: string, // translatedText — accumulated translated session
   transcribed: string, // transcribedText — live transcript (including interim)
   processingState: string,
   width: number,
-  height: number
+  height: number,
 ) {
-  const PX = 64;         // horizontal padding (left margin for document text)
-  const PY = 52;         // vertical padding
+  const PX = 64; // horizontal padding (left margin for document text)
+  const PY = 52; // vertical padding
   const availW = width - PX * 2;
 
-  // ── Background — always dark ──────────────────────────────────────────────
-  ctx.fillStyle = "#08080f";
+  // ── Background — pure black ───────────────────────────────────────────────
+  ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, width, height);
-
-  // Subtle blue radial glow
-  const grd = ctx.createRadialGradient(width * 0.15, height * 0.3, 0, width * 0.5, height * 0.5, width * 0.7);
-  grd.addColorStop(0, "rgba(59,130,246,0.06)");
-  grd.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, width, height);
-
-  // Top accent line
-  const lg = ctx.createLinearGradient(0, 0, width, 0);
-  lg.addColorStop(0, "transparent");
-  lg.addColorStop(0.3, "#3b82f6");
-  lg.addColorStop(0.7, "#8b5cf6");
-  lg.addColorStop(1, "transparent");
-  ctx.fillStyle = lg;
-  ctx.fillRect(0, 0, width, 3);
 
   // ── Status badge (top-right) ───────────────────────────────────────────────
   if (processingState === "translating") {
@@ -124,19 +113,27 @@ export function drawSubtitleFrame(
 
   // Reserve bottom strip for live interim when translation is already showing
   const interimFontSz = Math.floor(width / 58);
-  const needsInterimStrip = isTranscribing && mainIsTranslation && !!transcribed;
+  const needsInterimStrip =
+    isTranscribing && mainIsTranslation && !!transcribed;
   const interimAreaH = needsInterimStrip ? interimFontSz * 2.8 + 24 : 0;
   const mainAreaH = height - PY * 2 - interimAreaH;
 
   // ── Dynamic font size ──────────────────────────────────────────────────────
   const chars = mainText.length;
   let fontSize =
-    chars < 60   ? 56 :
-    chars < 150  ? 48 :
-    chars < 320  ? 40 :
-    chars < 600  ? 34 :
-    chars < 1000 ? 28 :
-    chars < 1600 ? 24 : 20;
+    chars < 60
+      ? 56
+      : chars < 150
+        ? 48
+        : chars < 320
+          ? 40
+          : chars < 600
+            ? 34
+            : chars < 1000
+              ? 28
+              : chars < 1600
+                ? 24
+                : 20;
   fontSize = Math.max(20, Math.min(60, fontSize));
 
   ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
@@ -202,28 +199,45 @@ export function drawSubtitleFrame(
   _watermark(ctx, width, height);
 }
 
-function _watermark(ctx: CanvasRenderingContext2D, width: number, height: number) {
+function _watermark(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+) {
   ctx.font = "12px Inter, system-ui, sans-serif";
   ctx.fillStyle = "rgba(148,163,184,0.18)";
   ctx.textAlign = "right";
   ctx.textBaseline = "bottom";
-  ctx.fillText("HY Translator · Local AI", width - 16, height - 12);
+  ctx.fillText("Conference Translator", width - 16, height - 12);
 }
 
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxW: number,
+): string[] {
   const words = text.split(" ");
   const lines: string[] = [];
   let cur = "";
   for (const w of words) {
     const test = cur ? `${cur} ${w}` : w;
-    if (ctx.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; }
-    else cur = test;
+    if (ctx.measureText(test).width > maxW && cur) {
+      lines.push(cur);
+      cur = w;
+    } else cur = test;
   }
   if (cur) lines.push(cur);
   return lines;
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);

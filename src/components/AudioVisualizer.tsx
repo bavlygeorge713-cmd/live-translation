@@ -24,11 +24,18 @@ export function AudioVisualizer({
   const { on, off } = COLORS[color];
 
   return (
-    <div className="flex items-end justify-center gap-[3px]" style={{ height }} aria-hidden>
+    <div
+      className="flex items-end justify-center gap-[3px]"
+      style={{ height }}
+      aria-hidden
+    >
       {data.map((v, i) => (
         <motion.div
           key={i}
-          animate={{ height: Math.max(3, v * height), backgroundColor: isActive ? on : off }}
+          animate={{
+            height: Math.max(3, v * height),
+            backgroundColor: isActive ? on : off,
+          }}
           transition={{ duration: 0.06, ease: "linear" }}
           style={{ width: 3, borderRadius: 2 }}
         />

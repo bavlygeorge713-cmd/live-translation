@@ -27,8 +27,7 @@ export function TextVoiceOver({ translate }: Props) {
     setOutput("");
     setError(null);
     try {
-      const src = store.sourceLang === "auto" ? "en" : store.sourceLang;
-      const result = await translate(input, src, store.targetLang);
+      const result = await translate(input, "auto", store.targetLang);
       setOutput(result);
     } catch (err) {
       setError((err as Error).message ?? "Translation failed.");
@@ -44,7 +43,9 @@ export function TextVoiceOver({ translate }: Props) {
           <FileText className="size-3.5 text-violet-400" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-slate-200">Text Translator</h3>
+          <h3 className="text-sm font-semibold text-slate-200">
+            Text Translator
+          </h3>
           <p className="text-xs text-slate-500">Type text, translate, speak</p>
         </div>
       </div>
@@ -59,7 +60,14 @@ export function TextVoiceOver({ translate }: Props) {
           focus:border-violet-500/40 transition-colors"
       />
 
-      <Button variant="primary" size="sm" loading={loading} disabled={!input.trim()} onClick={handleTranslate} className="w-full">
+      <Button
+        variant="primary"
+        size="sm"
+        loading={loading}
+        disabled={!input.trim()}
+        onClick={handleTranslate}
+        className="w-full"
+      >
         <ArrowRight className="size-3.5" /> Translate
       </Button>
 
@@ -71,18 +79,38 @@ export function TextVoiceOver({ translate }: Props) {
 
       <AnimatePresence>
         {output && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-            className="space-y-3">
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-3"
+          >
             <div className="bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-3">
               <p className="text-xs text-slate-200 leading-relaxed">{output}</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="success" size="sm"
-                onClick={() => tts.speak(output, targetLang?.bcp47 ?? "en-US", store.speechRate)}
-                disabled={tts.isPlaying} className="flex-1">
-                <Volume2 className="size-3.5" /> {tts.isPlaying ? "Playing…" : "Speak"}
+              <Button
+                variant="success"
+                size="sm"
+                onClick={() =>
+                  tts.speak(
+                    output,
+                    targetLang?.bcp47 ?? "en-US",
+                    store.speechRate,
+                  )
+                }
+                disabled={tts.isPlaying}
+                className="flex-1"
+              >
+                <Volume2 className="size-3.5" />{" "}
+                {tts.isPlaying ? "Playing…" : "Speak"}
               </Button>
-              <Button variant="ghost" size="sm" onClick={tts.stop} disabled={!tts.isPlaying}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={tts.stop}
+                disabled={!tts.isPlaying}
+              >
                 <VolumeX className="size-3.5" />
               </Button>
             </div>

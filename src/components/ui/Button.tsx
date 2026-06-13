@@ -10,11 +10,15 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const V = {
-  primary: "bg-gradient-to-r from-blue-600 to-violet-600 text-white hover:from-blue-500 hover:to-violet-500 shadow-lg shadow-blue-900/30",
-  secondary: "bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10",
-  danger: "bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-500 hover:to-rose-500",
+  primary:
+    "bg-gradient-to-r from-blue-600 to-violet-600 text-white hover:from-blue-500 hover:to-violet-500 shadow-lg shadow-blue-900/30",
+  secondary:
+    "bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10",
+  danger:
+    "bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-500 hover:to-rose-500",
   ghost: "text-slate-400 hover:text-slate-200 hover:bg-white/5",
-  success: "bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-500 hover:to-teal-500",
+  success:
+    "bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-500 hover:to-teal-500",
 };
 const S = {
   sm: "px-3 py-1.5 text-xs gap-1.5 rounded-lg",
@@ -23,7 +27,15 @@ const S = {
   icon: "p-2 rounded-lg",
 };
 
-export function Button({ variant = "secondary", size = "md", loading, children, className, disabled, ...rest }: Props) {
+export function Button({
+  variant = "secondary",
+  size = "md",
+  loading,
+  children,
+  className,
+  disabled,
+  ...rest
+}: Props) {
   return (
     <motion.button
       whileTap={{ scale: 0.96 }}
@@ -32,14 +44,21 @@ export function Button({ variant = "secondary", size = "md", loading, children, 
       className={clsx(
         "inline-flex items-center justify-center font-medium transition-all duration-200",
         "disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none",
-        V[variant], S[size], className
+        V[variant],
+        S[size],
+        className,
       )}
       disabled={disabled || loading}
       {...(rest as any)}
     >
       {loading ? (
-        <><span className="size-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" /> Processing…</>
-      ) : children}
+        <>
+          <span className="size-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />{" "}
+          Processing…
+        </>
+      ) : (
+        children
+      )}
     </motion.button>
   );
 }

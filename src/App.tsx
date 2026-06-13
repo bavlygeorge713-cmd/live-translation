@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { LanguageSelector } from "@/components/LanguageSelector";
@@ -9,38 +9,30 @@ import { ExportSidebar } from "@/components/ExportSidebar";
 import { QRSharePanel } from "@/components/QRSharePanel";
 import { useOnlineTranslation } from "@/hooks/useOnlineTranslation";
 import { useBroadcast } from "@/hooks/useBroadcast";
-import { useStore } from "@/store/translationStore";
+import { roomIdToDisplayName } from "@/lib/roomUtils";
 
-export default function App() {
+interface AppProps {
+  roomId: string;
+}
+
+export default function App({ roomId }: AppProps) {
   const canvasRef = useRef<CanvasHandle>(null);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
+  const [recIsRecording, setRecIsRecording] = useState(false);
+  const [recDuration, setRecDuration] = useState(0);
 
-  const { translate } = useOnlineTranslation();
-  const { translatedText, latestChunk, interimChunk, sourceLang, targetLang } = useStore();
+  const { translate } = useOnlineTranslation(roomId);
+  const { connected, viewerCount, send } = useBroadcast(
+    "sender",
+    undefined,
+    roomId,
+  );
 
-  const { connected, viewerCount, send } = useBroadcast("sender");
-
-  // Broadcast final translation chunks immediately as they arrive
-  const prevChunkRef = useRef("");
-  useEffect(() => {
-    if (latestChunk === prevChunkRef.current) return;
-    prevChunkRef.current = latestChunk;
-    if (!latestChunk) return; // session reset — just sync the ref, no broadcast
-    send({ type: "translation", text: translatedText, chunk: latestChunk, sourceLang, targetLang });
-  }, [latestChunk, translatedText, sourceLang, targetLang, send]);
-
-  // Broadcast interim translation updates as they arrive
-  const prevInterimRef = useRef("");
-  useEffect(() => {
-    if (interimChunk === prevInterimRef.current) return;
-    prevInterimRef.current = interimChunk;
-    if (!interimChunk) return; // session reset — just sync the ref, no broadcast
-    send({ type: "translation", text: translatedText, interimChunk, sourceLang, targetLang });
-  }, [interimChunk, translatedText, sourceLang, targetLang, send]);
+  const roomName = roomId ? roomIdToDisplayName(roomId) : undefined;
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <Header roomName={roomName} />
 
       <main className="flex-1 max-w-[1500px] w-full mx-auto px-4 md:px-6 py-5 space-y-5">
         <motion.div
@@ -59,7 +51,11 @@ export default function App() {
             transition={{ delay: 0.1 }}
             className="flex flex-col gap-4"
           >
-            <MicrophonePanel onStream={setMicStream} translate={translate} />
+            <MicrophonePanel
+              onStream={setMicStream}
+              send={send}
+              roomId={roomId}
+            />
             <TextVoiceOver translate={translate} />
           </motion.div>
 
@@ -69,7 +65,12 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <SubtitleCanvas ref={canvasRef} micStream={micStream} />
+            <SubtitleCanvas
+              ref={canvasRef}
+              micStream={micStream}
+              isRecording={recIsRecording}
+              recDuration={recDuration}
+            />
           </motion.div>
 
           {/* Right column */}
@@ -79,13 +80,22 @@ export default function App() {
             transition={{ delay: 0.2 }}
             className="flex flex-col gap-4"
           >
-            <ExportSidebar canvasRef={canvasRef} micStream={micStream} />
+            <ExportSidebar
+              canvasRef={canvasRef}
+              micStream={micStream}
+              onRecordingChange={(isRec, dur) => {
+                setRecIsRecording(isRec);
+                setRecDuration(dur);
+              }}
+            />
             <QRSharePanel connected={connected} viewerCount={viewerCount} />
           </motion.div>
         </div>
 
         <footer className="text-center text-xs text-slate-700 pb-4">
-          HY Translator · Real-time Speech Translation
+          {roomName
+            ? `${roomName} · Conference Translator · Real-time Speech Translation`
+            : "Conference Translator · Real-time Speech Translation"}
         </footer>
       </main>
     </div>

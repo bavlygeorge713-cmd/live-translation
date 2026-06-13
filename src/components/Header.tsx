@@ -3,7 +3,11 @@ import { Mic2, Globe } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { useStore } from "@/store/translationStore";
 
-export function Header() {
+interface HeaderProps {
+  roomName?: string;
+}
+
+export function Header({ roomName }: HeaderProps) {
   const { processingState } = useStore();
 
   return (
@@ -19,16 +23,32 @@ export function Header() {
           </div>
           <div>
             <span className="text-sm font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
-              HY Translator
+              {roomName ? `${roomName} — Host` : "Conference Translator"}
             </span>
-            <p className="text-[10px] text-slate-600 -mt-0.5">Real-time Speech Translation</p>
+            <p className="text-[10px] text-slate-600 -mt-0.5">
+              {roomName
+                ? "Real-time Speech Translation"
+                : "Real-time Speech Translation"}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {processingState === "transcribing" && <Badge variant="blue" dot>Transcribing…</Badge>}
-          {processingState === "translating" && <Badge variant="purple" dot>Translating…</Badge>}
-          {processingState === "speaking" && <Badge variant="emerald" dot>Speaking…</Badge>}
+          {processingState === "transcribing" && (
+            <Badge variant="blue" dot>
+              Transcribing…
+            </Badge>
+          )}
+          {processingState === "translating" && (
+            <Badge variant="purple" dot>
+              Translating…
+            </Badge>
+          )}
+          {processingState === "speaking" && (
+            <Badge variant="emerald" dot>
+              Speaking…
+            </Badge>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 text-xs text-slate-600">
