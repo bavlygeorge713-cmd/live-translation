@@ -1,0 +1,6 @@
+node_modules
+dist-electron
+relay
+electron
+public/models
+*.asar

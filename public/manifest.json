@@ -1,7 +1,7 @@
 {
-  "name": "HY Translator — Local AI Translation",
-  "short_name": "HY Translator",
-  "description": "Real-time speech-to-speech translation — 100% local, no cloud required.",
+  "name": "Conference Translator — Real-time Speech Translation",
+  "short_name": "Conference Translator",
+  "description": "Real-time speech-to-speech translation for medical conferences.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0f",

@@ -1,8 +1,42 @@
+# Dependencies
 node_modules/
+relay/node_modules/
+
+# Build output
 dist/
 dist-electron/
-relay/node_modules/
-.env.local
-.env
 
+# Environment variables — never commit real secrets
+.env
+.env.local
+.env.*.local
+*.local
+
+# Vercel
 .vercel
+
+# Editor / OS artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Test results
+test-results/
+playwright-report/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Benchmark binary outputs (scripts are committed; generated artifacts are not)
+benchmark/screenshots/
+benchmark/*.wav
+
+# Test generated output
+tests/report/
+tests/screenshots/
+tests/screenshots-stress/
+tests/screenshots-thorough/
+test-results/
+playwright-report/
