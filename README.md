@@ -1,4 +1,4 @@
-# HY Translator
+# Live Translation
 
 Real-time speech translation for conferences and lectures — host speaks, remote viewers read in their language.
 
@@ -10,7 +10,16 @@ The host presses record, speaks into their microphone, and the system transcribe
 
 **Live deployment:** https://speech-translate-rooms.vercel.app
 
-> Screenshots / screen-recording to be added.
+![Host translating live](assets/host-translation.png)
+
+### Screenshots
+
+| | |
+|---|---|
+| ![Room setup](assets/host-landing.png) | ![Full host interface](assets/host-interface.png) |
+| *Room creation — name becomes the shareable room ID* | *Host interface — mic panel, live canvas, export and QR sidebar* |
+| ![QR share panel](assets/host-qr.png) | ![Viewer live captions](assets/viewer-live.png) |
+| *QR code panel — viewers scan to join on any device* | *Viewer page — connected and waiting for the host to speak* |
 
 ---
 
@@ -160,7 +169,7 @@ The free tier on Groq has a requests-per-minute ceiling that a single active roo
 
 ```bash
 git clone <repo-url>
-cd speech-translate-local
+cd live-translation
 npm install
 
 # Copy and fill in your keys
