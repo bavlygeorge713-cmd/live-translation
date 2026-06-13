@@ -12,9 +12,12 @@ export function useNetworkInfo() {
       .catch(() => setIps([]));
   }, [isProd]);
 
-  // In production use the deployed URL directly
   if (isProd) {
-    return { ips: [], viewerUrls: [`${window.location.origin}/viewer`] };
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get("room");
+    const viewerBase = `${window.location.origin}/viewer`;
+    const viewerUrl = roomId ? `${viewerBase}?room=${roomId}` : viewerBase;
+    return { ips: [], viewerUrls: [viewerUrl] };
   }
 
   const port = window.location.port || "5173";
