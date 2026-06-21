@@ -1,10 +1,13 @@
-import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { motion } from "framer-motion";
+import { Sun, Moon } from "lucide-react";
 import { useStore } from "@/store/translationStore";
 import { drawSubtitleFrame } from "@/lib/exportUtils";
 
 const W = 1280;
 const H = 720;
+
+const THEME_KEY = "ct_canvas_theme";
 
 const LIVE_STYLE = `
 @keyframes liveDot {
@@ -47,6 +50,29 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
     const scrollRef = useRef<HTMLDivElement>(null);
     const { sentences, sentenceHistory, interimTranscript, processingState } =
       useStore();
+
+    const [isDark, setIsDark] = useState<boolean>(
+      () => (localStorage.getItem(THEME_KEY) ?? "dark") !== "light",
+    );
+
+    const toggleTheme = () => {
+      setIsDark((prev) => {
+        const next = !prev;
+        localStorage.setItem(THEME_KEY, next ? "dark" : "light");
+        return next;
+      });
+    };
+
+    // Theme-derived colors
+    const bg = isDark ? "#000000" : "#fafafa";
+    const textPrimary = isDark ? "#ffffff" : "#111111";
+    const textEmpty = isDark ? "rgba(100,116,139,0.4)" : "rgba(71,85,105,0.55)";
+    const footerBorder = isDark ? "#222222" : "#e2e8f0";
+    const footerText = isDark ? "#888888" : "#555555";
+    const btnBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
+    const btnBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.12)";
+    const btnColor = isDark ? "#94a3b8" : "#475569";
+    const colorTransition = "background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease";
 
     useImperativeHandle(ref, () => ({
       canvas: canvasRef.current,
@@ -95,7 +121,7 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
 
     return (
       <>
-        {/* Hidden recording canvas */}
+        {/* Hidden recording canvas — always dark, unaffected by theme toggle */}
         <canvas
           ref={canvasRef}
           width={W}
@@ -110,9 +136,10 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
             height: "400px",
             borderRadius: "12px",
             overflow: "hidden",
-            backgroundColor: "#000000",
+            backgroundColor: bg,
             display: "flex",
             flexDirection: "column",
+            transition: colorTransition,
           }}
         >
           {/* ── Header ── */}
@@ -129,9 +156,10 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
               style={{
                 fontSize: "12px",
                 fontWeight: 600,
-                color: "#ffffff",
+                color: textPrimary,
                 letterSpacing: "0.05em",
                 textTransform: "uppercase",
+                transition: colorTransition,
               }}
             >
               Live Translation
@@ -213,6 +241,30 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
                 </span>
               </span>
             )}
+
+            {/* Theme toggle — pushes to the right */}
+            <button
+              onClick={toggleTheme}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              style={{
+                marginLeft: "auto",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "26px",
+                height: "26px",
+                borderRadius: "6px",
+                border: `1px solid ${btnBorder}`,
+                backgroundColor: btnBg,
+                cursor: "pointer",
+                color: btnColor,
+                flexShrink: 0,
+                transition: colorTransition,
+                padding: 0,
+              }}
+            >
+              {isDark ? <Sun size={13} /> : <Moon size={13} />}
+            </button>
           </div>
 
           {/* ── Sentences — scrollable ── */}
@@ -231,8 +283,9 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
               <p
                 style={{
                   fontSize: "14px",
-                  color: "rgba(100,116,139,0.4)",
+                  color: textEmpty,
                   margin: 0,
+                  transition: colorTransition,
                 }}
               >
                 Press Start and begin speaking…
@@ -249,9 +302,10 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
                   transition={{ duration: 0.15 }}
                   style={{
                     fontSize: "28px",
-                    color: "#ffffff",
+                    color: textPrimary,
                     lineHeight: "1.5",
                     margin: 0,
+                    transition: colorTransition,
                   }}
                 >
                   {entry.text}
@@ -279,11 +333,12 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
             style={{
               flexShrink: 0,
               padding: "8px 16px",
-              borderTop: "1px solid #222222",
-              color: "#888888",
+              borderTop: `1px solid ${footerBorder}`,
+              color: footerText,
               fontSize: "14px",
               lineHeight: "1.4",
               minHeight: "36px",
+              transition: colorTransition,
             }}
           >
             {interimTranscript ||
