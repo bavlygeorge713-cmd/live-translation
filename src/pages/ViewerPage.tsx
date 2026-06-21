@@ -94,9 +94,12 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
 
   // ── TTS queue with index tracking ─────────────────────────────────────────
   const lastSpokenIndexRef = useRef(-1);
-  const ttsQueueRef = useRef<Array<{ text: string; index: number }>>([]);
+  const ttsQueueRef = useRef<Array<{ text: string; index: number; lang: string }>>([]);
   const ttsBusyRef = useRef(false);
   const drainTtsRef = useRef<() => void>(() => {});
+
+  // Parallel to confirmedLines — bcp47 of each line's language at the time it was confirmed
+  const confirmedLineLangsRef = useRef<string[]>([]);
 
   // ── Effective language ─────────────────────────────────────────────────────
   const effectiveLang =
@@ -109,10 +112,10 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
   drainTtsRef.current = () => {
     if (ttsBusyRef.current || ttsQueueRef.current.length === 0) return;
 
-    const { text, index } = ttsQueueRef.current.shift()!;
+    const { text, index, lang } = ttsQueueRef.current.shift()!;
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = targetLangBcp47Ref.current;
-    utter.rate = 1.5;
+    utter.lang = lang;
+    utter.rate = 1.25;
 
     const voices = window.speechSynthesis.getVoices();
     const uri = selectedVoiceURIRef.current;
@@ -120,13 +123,15 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
       const voice = voices.find((v) => v.voiceURI === uri);
       if (voice) utter.voice = voice;
     } else {
-      const langPrefix = targetLangBcp47Ref.current.split("-")[0];
+      const langPrefix = lang.split("-")[0];
+      // Prefer high-quality voice that matches the item's language
       const preferred =
-        voices.find((v) => v.name.includes("Google")) ||
-        voices.find((v) => v.name.includes("Microsoft")) ||
-        voices.find((v) => v.name.includes("Natural")) ||
+        voices.find((v) => v.lang.startsWith(langPrefix) && v.name.includes("Google")) ||
+        voices.find((v) => v.lang.startsWith(langPrefix) && v.name.includes("Microsoft")) ||
+        voices.find((v) => v.lang.startsWith(langPrefix) && v.name.includes("Natural")) ||
         voices.find((v) => v.lang.startsWith(langPrefix));
       if (preferred) utter.voice = preferred;
+      // No matching voice: leave utter.voice unset; utter.lang still tells the OS the right language
     }
 
     ttsBusyRef.current = true;
@@ -189,7 +194,8 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
 
     for (let i = lastSpokenIndexRef.current + 1; i < n; i++) {
       const line = confirmedLines[i].trim();
-      if (line) ttsQueueRef.current.push({ text: line, index: i });
+      const lang = confirmedLineLangsRef.current[i] ?? targetLangBcp47Ref.current;
+      if (line) ttsQueueRef.current.push({ text: line, index: i, lang });
     }
     lastSpokenIndexRef.current = n - 1;
     drainTtsRef.current();
@@ -234,10 +240,13 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
   const addConfirmedLine = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed || trimmed.length < 3) return;
+    // Capture lang at call time (not inside setter, to avoid stale-closure surprises)
+    const lang = targetLangBcp47Ref.current;
     setConfirmedLines((prev) => {
       if (prev.slice(-3).includes(trimmed)) return prev;
       const next = [...prev, trimmed];
       confirmedLinesRef.current = next;
+      confirmedLineLangsRef.current.push(lang);
       return next;
     });
   }, []);
@@ -246,10 +255,12 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
   const addHistoryLine = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed || trimmed.length < 3) return;
+    const lang = targetLangBcp47Ref.current;
     setConfirmedLines((prev) => {
       if (prev.slice(-3).includes(trimmed)) return prev;
       const next = [...prev, trimmed];
       confirmedLinesRef.current = next;
+      confirmedLineLangsRef.current.push(lang);
       lastSpokenIndexRef.current = next.length - 1;
       return next;
     });
@@ -328,6 +339,7 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
     evolvingSeqRef.current = -1;
     evolvingTextRef.current = "";
     confirmedLinesRef.current = [];
+    confirmedLineLangsRef.current = [];
     setConfirmedLines([]);
     setLiveLine("");
   }, []);
@@ -355,6 +367,15 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
             LANGUAGES.find((l) => l.code === incomingHostLang)?.bcp47 ??
             "en-US";
           targetLangBcp47Ref.current = bcp47;
+          // Cancel any utterance speaking old-language text so the wrong voice
+          // doesn't finish; queued items each carry their own lang and will be
+          // spoken with the correct voice when drained.
+          try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
+          ttsBusyRef.current = false;
+          currentlyReadingIndexRef.current = -1;
+          setCurrentlyReadingIndex(-1);
+          setSelectedVoiceURI("");
+          setTimeout(() => drainTtsRef.current(), 0);
         }
       }
 
