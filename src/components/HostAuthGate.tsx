@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { LogOut, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
+import { AuthContext } from "@/contexts/AuthContext";
 
 type AuthState = "checking" | "authenticated" | "unauthenticated";
 
@@ -24,6 +25,10 @@ export function HostAuthGate({ children }: Props) {
       .catch(() => setAuthState("unauthenticated"));
   }, []);
 
+  const clearError = () => {
+    if (loginError) setLoginError("");
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
@@ -40,13 +45,18 @@ export function HostAuthGate({ children }: Props) {
       if (res.ok) {
         setAuthState("authenticated");
       } else if (res.status === 429) {
-        setLoginError("Too many failed attempts. Please wait a few minutes.");
+        setLoginError("Too many failed attempts. Please wait a few minutes and try again.");
+      } else if (res.status === 401) {
+        setLoginError("Wrong username or password. Please try again.");
+        if (passwordRef.current) {
+          passwordRef.current.value = "";
+          passwordRef.current.focus();
+        }
       } else {
-        setLoginError("Invalid credentials.");
-        if (passwordRef.current) passwordRef.current.value = "";
+        setLoginError("Something went wrong. Please try again.");
       }
     } catch {
-      setLoginError("Network error. Please try again.");
+      setLoginError("Something went wrong. Please try again.");
     } finally {
       setLoggingIn(false);
     }
@@ -100,6 +110,7 @@ export function HostAuthGate({ children }: Props) {
               autoComplete="username"
               placeholder="Username"
               required
+              onChange={clearError}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white
                 placeholder-slate-600 text-sm outline-none focus:border-blue-500/50 transition-colors"
             />
@@ -109,21 +120,28 @@ export function HostAuthGate({ children }: Props) {
               autoComplete="current-password"
               placeholder="Password"
               required
+              onChange={clearError}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white
                 placeholder-slate-600 text-sm outline-none focus:border-blue-500/50 transition-colors"
             />
 
             {loginError && (
-              <p className="text-red-400 text-xs px-1">{loginError}</p>
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-400 text-xs px-1 leading-relaxed"
+              >
+                {loginError}
+              </motion.p>
             )}
 
             <button
               type="submit"
               disabled={loggingIn}
-              className="mt-1 w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-900
+              className="mt-1 w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed
                 text-white font-medium rounded-xl py-3 text-sm transition-colors"
             >
-              {loggingIn ? "Signing in…" : "Log in"}
+              {loggingIn ? "Logging in…" : "Log in"}
             </button>
           </form>
         </motion.div>
@@ -131,22 +149,11 @@ export function HostAuthGate({ children }: Props) {
     );
   }
 
+  // Authenticated: provide logout via context so Header can render the button
+  // in its own layout without any fixed/absolute positioning overlap.
   return (
-    <>
+    <AuthContext.Provider value={{ onLogout: handleLogout }}>
       {children}
-      {/* Floating logout — unobtrusive, fixed top-right */}
-      <div className="fixed top-3 right-3 z-50">
-        <button
-          onClick={handleLogout}
-          title="Log out"
-          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full
-            bg-white/5 border border-white/10 text-slate-500
-            hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-colors"
-        >
-          <LogOut className="size-3" />
-          <span>Log out</span>
-        </button>
-      </div>
-    </>
+    </AuthContext.Provider>
   );
 }
