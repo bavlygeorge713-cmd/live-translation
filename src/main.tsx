@@ -4,6 +4,7 @@ import App from "./App";
 import { ViewerPage } from "./pages/ViewerPage";
 import { RoomCreatePage } from "./pages/RoomCreatePage";
 import { RoomJoinPage } from "./pages/RoomJoinPage";
+import { HostAuthGate } from "./components/HostAuthGate";
 import "./index.css";
 
 const params = new URLSearchParams(window.location.search);
@@ -14,7 +15,11 @@ let content: React.ReactNode;
 if (isViewer) {
   content = roomId ? <ViewerPage roomId={roomId} /> : <RoomJoinPage />;
 } else {
-  content = roomId ? <App roomId={roomId} /> : <RoomCreatePage />;
+  content = (
+    <HostAuthGate>
+      {roomId ? <App roomId={roomId} /> : <RoomCreatePage />}
+    </HostAuthGate>
+  );
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
