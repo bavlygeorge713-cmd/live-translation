@@ -7,6 +7,7 @@ import { SubtitleCanvas, CanvasHandle } from "@/components/SubtitleCanvas";
 import { TextVoiceOver } from "@/components/TextVoiceOver";
 import { ExportSidebar } from "@/components/ExportSidebar";
 import { QRSharePanel } from "@/components/QRSharePanel";
+import { AllowedLangsPanel } from "@/components/AllowedLangsPanel";
 import { useOnlineTranslation } from "@/hooks/useOnlineTranslation";
 import { useBroadcast } from "@/hooks/useBroadcast";
 import { roomIdToDisplayName } from "@/lib/roomUtils";
@@ -91,6 +92,7 @@ export default function App({ roomId }: AppProps) {
               }}
             />
             <QRSharePanel connected={connected} viewerCount={viewerCount} />
+            <AllowedLangsPanel send={send} viewerCount={viewerCount} />
           </motion.div>
         </div>
 

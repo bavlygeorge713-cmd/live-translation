@@ -50,6 +50,11 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
   const [hostTargetLang, setHostTargetLang] = useState("");
   const hostTargetLangRef = useRef("");
 
+  // ── Allow-list (received from host via config message) ────────────────────
+  const [allowedLangs, setAllowedLangs] = useState<string[]>([]);
+  const [hasReceivedConfig, setHasReceivedConfig] = useState(false);
+  const [langRemovedNotice, setLangRemovedNotice] = useState(false);
+
   // ── Display ────────────────────────────────────────────────────────────────
   const [confirmedLines, setConfirmedLines] = useState<string[]>([]);
   const confirmedLinesRef = useRef<string[]>([]);
@@ -336,6 +341,18 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
   // ── Message handler ────────────────────────────────────────────────────────
   const handleMessage = useCallback(
     (msg: BroadcastMessage) => {
+      if (msg.type === "config") {
+        const langs = msg.allowedLangs ?? [];
+        setAllowedLangs(langs);
+        setHasReceivedConfig(true);
+        const currentLang = viewerLangRef.current;
+        if (currentLang !== "host" && (langs.length === 0 || !langs.includes(currentLang))) {
+          setViewerLang("host", false);
+          setLangRemovedNotice(true);
+          setTimeout(() => setLangRemovedNotice(false), 4000);
+        }
+        return;
+      }
       if (msg.type !== "translation") return;
       if (
         !msg.isHistory &&
@@ -530,6 +547,12 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
           </div>
         </div>
 
+        {langRemovedNotice && (
+          <div className="mx-5 mb-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-300">
+            This language is no longer available. Switched to Follow Host.
+          </div>
+        )}
+
         <div className="flex items-center justify-between px-5 pb-2.5 gap-3 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-[11px] text-slate-500 shrink-0">
@@ -546,11 +569,15 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
                 <option value="host" className="bg-[#0d0d14]">
                   🌐 Follow Host
                 </option>
-                {LANGUAGES.filter((l) => l.code !== "auto").map((l) => (
-                  <option key={l.code} value={l.code} className="bg-[#0d0d14]">
-                    {l.flag} {l.name}
-                  </option>
-                ))}
+                {hasReceivedConfig &&
+                  allowedLangs.length > 0 &&
+                  LANGUAGES.filter(
+                    (l) => l.code !== "auto" && allowedLangs.includes(l.code),
+                  ).map((l) => (
+                    <option key={l.code} value={l.code} className="bg-[#0d0d14]">
+                      {l.flag} {l.name}
+                    </option>
+                  ))}
               </select>
               <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none text-[10px]">
                 ▾

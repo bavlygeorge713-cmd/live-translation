@@ -21,6 +21,8 @@ export interface BroadcastMessage {
   refined?: boolean;
   ts?: number;
   fromPerLangChannel?: boolean;
+  allowedLangs?: string[];
+  maxCount?: number;
 }
 
 function sanitizeRoomParam(raw: string | undefined): string {
