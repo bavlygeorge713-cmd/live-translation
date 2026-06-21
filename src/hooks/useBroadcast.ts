@@ -4,7 +4,7 @@ import * as Ably from "ably";
 type Role = "sender" | "viewer";
 
 export interface BroadcastMessage {
-  type: "translation" | "viewers" | "ping";
+  type: "translation" | "viewers" | "ping" | "config";
   text?: string;
   chunk?: string;
   interimChunk?: string;
@@ -20,6 +20,7 @@ export interface BroadcastMessage {
   seqId?: number;
   refined?: boolean;
   ts?: number;
+  fromPerLangChannel?: boolean;
 }
 
 function sanitizeRoomParam(raw: string | undefined): string {
@@ -34,18 +35,25 @@ export function useBroadcast(
   role: Role,
   onMessage?: (msg: BroadcastMessage) => void,
   roomId?: string,
+  viewerLang?: string | null,
 ) {
   const channelRef = useRef<Ably.RealtimeChannel | null>(null);
+  const ablyClientRef = useRef<Ably.Realtime | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
   const [lastMessage, setLastMessage] = useState<BroadcastMessage | null>(null);
+  const [requestedLangs, setRequestedLangs] = useState<Set<string>>(new Set());
 
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
 
   const isProd = import.meta.env.PROD;
   const sanitizedRoom = sanitizeRoomParam(roomId);
+
+  // Keep a ref so the main effect can read the initial viewerLang at mount time
+  const viewerLangRef = useRef(viewerLang ?? null);
+  viewerLangRef.current = viewerLang ?? null;
 
   useEffect(() => {
     if (!isProd) {
@@ -102,6 +110,8 @@ export function useBroadcast(
       clientId,
     });
 
+    ablyClientRef.current = client;
+
     client.connection.on("connected", () => setConnected(true));
     client.connection.on("disconnected", () => setConnected(false));
     client.connection.on("failed", () => setConnected(false));
@@ -115,7 +125,6 @@ export function useBroadcast(
     if (role === "viewer") {
       channel.subscribe("translation", (msg) => {
         const data = msg.data as BroadcastMessage;
-        // Rewound messages have a past publish timestamp; 5s threshold is safe
         const isHistory = Date.now() - (msg.timestamp ?? 0) > 5000;
         const fullMsg: BroadcastMessage = {
           ...data,
@@ -125,7 +134,15 @@ export function useBroadcast(
         setLastMessage(fullMsg);
       });
 
-      channel.presence.enter({ role: "viewer" }).catch(() => {});
+      channel.subscribe("config", (msg) => {
+        const data = msg.data as BroadcastMessage;
+        onMessageRef.current?.(data);
+        setLastMessage(data);
+      });
+
+      channel.presence
+        .enter({ role: "viewer", lang: viewerLangRef.current ?? "host" })
+        .catch(() => {});
     } else {
       // Host/sender
       channel.presence.enter({ role: "host" }).catch(() => {});
@@ -138,6 +155,12 @@ export function useBroadcast(
               (m) => (m.data as { role?: string })?.role !== "host",
             );
             setViewerCount(viewers.length);
+            const langs = new Set<string>();
+            for (const m of viewers) {
+              const lang = (m.data as { lang?: string })?.lang;
+              if (lang && lang !== "host") langs.add(lang);
+            }
+            setRequestedLangs(langs);
           })
           .catch(() => {});
       };
@@ -148,6 +171,7 @@ export function useBroadcast(
 
     return () => {
       channelRef.current = null;
+      ablyClientRef.current = null;
       channel.unsubscribe();
       channel.presence.unsubscribe();
       channel.presence.leave().catch(() => {});
@@ -155,12 +179,53 @@ export function useBroadcast(
     };
   }, [role, isProd, sanitizedRoom]);
 
+  // ── Per-language channel subscription (viewer only) ───────────────────────
+  // Re-runs when viewerLang changes; reuses the existing Ably client.
+  useEffect(() => {
+    if (!isProd || role !== "viewer") return;
+
+    // Keep presence up to date when the viewer changes language
+    const baseChannel = channelRef.current;
+    if (baseChannel) {
+      baseChannel.presence
+        .update({ role: "viewer", lang: viewerLang ?? "host" })
+        .catch(() => {});
+    }
+
+    if (!viewerLang) return;
+
+    const client = ablyClientRef.current;
+    if (!client) return;
+
+    const perLangChannelName = `room:${sanitizedRoom}:lang:${viewerLang}`;
+    const perLangChannel = client.channels.get(perLangChannelName, {
+      params: { rewind: "10" },
+    });
+
+    perLangChannel.subscribe("translation", (msg) => {
+      const data = msg.data as BroadcastMessage;
+      const isHistory = Date.now() - (msg.timestamp ?? 0) > 5000;
+      const fullMsg: BroadcastMessage = {
+        ...data,
+        isHistory: isHistory || !!data.isHistory,
+        fromPerLangChannel: true,
+      };
+      onMessageRef.current?.(fullMsg);
+      setLastMessage(fullMsg);
+    });
+
+    return () => {
+      perLangChannel.unsubscribe();
+    };
+  }, [isProd, role, sanitizedRoom, viewerLang]);
+
   const send = useCallback(
     (msg: BroadcastMessage) => {
       if (isProd) {
         const channel = channelRef.current;
         if (channel && role === "sender") {
-          channel.publish("translation", msg).catch(() => {});
+          const eventName = msg.type === "config" ? "config" : "translation";
+          channel.publish(eventName, msg).catch(() => {});
         }
         return;
       }
@@ -172,5 +237,18 @@ export function useBroadcast(
     [role, isProd],
   );
 
-  return { connected, viewerCount, lastMessage, send };
+  const publishToLang = useCallback(
+    (langCode: string, msg: BroadcastMessage) => {
+      if (!isProd) return;
+      const client = ablyClientRef.current;
+      if (!client) return;
+      client.channels
+        .get(`room:${sanitizedRoom}:lang:${langCode}`)
+        .publish("translation", msg)
+        .catch(() => {});
+    },
+    [isProd, sanitizedRoom],
+  );
+
+  return { connected, viewerCount, lastMessage, send, requestedLangs, publishToLang };
 }

@@ -14,24 +14,6 @@ import {
 const VIEWER_LANG_KEY = "ct_viewer_lang";
 const VIEWER_LANG_MANUAL_KEY = "ct_viewer_lang_manual";
 
-async function gtxTranslate(
-  text: string,
-  tgtLang: string,
-  sourceLang?: string,
-): Promise<string> {
-  try {
-    const sl = sourceLang || "auto";
-    const url =
-      `https://translate.googleapis.com/translate_a/single` +
-      `?client=gtx&sl=${encodeURIComponent(sl)}&tl=${encodeURIComponent(tgtLang)}&dt=t` +
-      `&q=${encodeURIComponent(text)}`;
-    const res = await fetch(url);
-    const data = (await res.json()) as any[][][];
-    return (data[0]?.[0]?.[0] ?? "").trim();
-  } catch {
-    return "";
-  }
-}
 
 interface ViewerPageProps {
   roomId?: string;
@@ -47,14 +29,21 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
     handleMessageRef.current?.(msg);
   }, []);
 
-  const { connected } = useBroadcast("viewer", stableOnMessage, roomId);
-  const tts = useSpeechSynthesis();
-
-  // ── Language ───────────────────────────────────────────────────────────────
+  // ── Language (declared before useBroadcast so viewerLang can be passed) ────
   const [viewerLang, setViewerLangState] = useState<string>(
     () => localStorage.getItem(VIEWER_LANG_KEY) ?? "host",
   );
   const viewerLangRef = useRef(viewerLang);
+
+  const { connected } = useBroadcast(
+    "viewer",
+    stableOnMessage,
+    roomId,
+    viewerLang === "host" ? null : viewerLang,
+  );
+  const tts = useSpeechSynthesis();
+
+  // ── Language (continued) ───────────────────────────────────────────────────
   const hasManuallySelectedRef = useRef(
     localStorage.getItem(VIEWER_LANG_MANUAL_KEY) === "true",
   );
@@ -356,26 +345,25 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
         return;
       if (msg.refined) return; // legacy refinement broadcasts — the first text is canonical now
 
-      // Track host target language
-      const incomingHostLang = msg.targetLang ?? "";
-      if (incomingHostLang && incomingHostLang !== hostTargetLangRef.current) {
-        hostTargetLangRef.current = incomingHostLang;
-        setHostTargetLang(incomingHostLang);
-        if (!hasManuallySelectedRef.current) {
-          viewerLangRef.current = "host";
-          const bcp47 =
-            LANGUAGES.find((l) => l.code === incomingHostLang)?.bcp47 ??
-            "en-US";
-          targetLangBcp47Ref.current = bcp47;
-          // Cancel any utterance speaking old-language text so the wrong voice
-          // doesn't finish; queued items each carry their own lang and will be
-          // spoken with the correct voice when drained.
-          try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
-          ttsBusyRef.current = false;
-          currentlyReadingIndexRef.current = -1;
-          setCurrentlyReadingIndex(-1);
-          setSelectedVoiceURI("");
-          setTimeout(() => drainTtsRef.current(), 0);
+      // Per-lang channel messages carry targetLang=viewerLang, not the host broadcast lang
+      if (!msg.fromPerLangChannel) {
+        const incomingHostLang = msg.targetLang ?? "";
+        if (incomingHostLang && incomingHostLang !== hostTargetLangRef.current) {
+          hostTargetLangRef.current = incomingHostLang;
+          setHostTargetLang(incomingHostLang);
+          if (!hasManuallySelectedRef.current) {
+            viewerLangRef.current = "host";
+            const bcp47 =
+              LANGUAGES.find((l) => l.code === incomingHostLang)?.bcp47 ??
+              "en-US";
+            targetLangBcp47Ref.current = bcp47;
+            try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
+            ttsBusyRef.current = false;
+            currentlyReadingIndexRef.current = -1;
+            setCurrentlyReadingIndex(-1);
+            setSelectedVoiceURI("");
+            setTimeout(() => drainTtsRef.current(), 0);
+          }
         }
       }
 
@@ -395,14 +383,6 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
         if (isFollowHost) {
           const chunk = (msg.chunk ?? "").trim();
           if (chunk.length >= 3) addHistoryLine(chunk);
-        } else {
-          const rawSource = (msg.transcript ?? "").trim();
-          if (rawSource.length >= 3) {
-            const sourceLang = msg.sourceLang || "auto";
-            gtxTranslate(rawSource, lang, sourceLang).then((t) => {
-              if (t) addHistoryLine(t);
-            });
-          }
         }
         return;
       }
@@ -424,21 +404,6 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
 
         // Split the chunk into words and pace them onto the live line
         getPacer().enqueue(msg.seqId, chunk);
-      } else {
-        // Own language: translate raw source once per seqId
-        const rawSource = (msg.transcript ?? "").trim();
-        if (rawSource.length < 3) return;
-        if (seqKey) {
-          if (processedKeysRef.current.has(seqKey)) return;
-          processedKeysRef.current.add(seqKey);
-        }
-        const seq = msg.seqId ?? -1;
-        const sourceLang = msg.sourceLang || "auto";
-        gtxTranslate(rawSource, lang, sourceLang).then((t) => {
-          if (!t) return;
-          if (seq >= 0) getPacer().enqueue(seq, t);
-          else addConfirmedLine(t);
-        });
       }
     },
     [addConfirmedLine, addHistoryLine, getPacer],

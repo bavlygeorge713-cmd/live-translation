@@ -22,7 +22,7 @@ export default function App({ roomId }: AppProps) {
   const [recDuration, setRecDuration] = useState(0);
 
   const { translate } = useOnlineTranslation(roomId);
-  const { connected, viewerCount, send } = useBroadcast(
+  const { connected, viewerCount, send, requestedLangs, publishToLang } = useBroadcast(
     "sender",
     undefined,
     roomId,
@@ -55,6 +55,8 @@ export default function App({ roomId }: AppProps) {
               onStream={setMicStream}
               send={send}
               roomId={roomId}
+              requestedLangs={requestedLangs}
+              publishToLang={publishToLang}
             />
             <TextVoiceOver translate={translate} />
           </motion.div>

@@ -22,7 +22,10 @@ export default async function handler(req: any, res: any) {
     const client = new Ably.Rest(apiKey);
     const tokenRequest = await client.auth.createTokenRequest({
       clientId: "*",
-      capability: { [channelName]: ["subscribe", "publish", "presence"] },
+      capability: {
+        [channelName]: ["subscribe", "publish", "presence"],
+        [`${channelName}:lang:*`]: ["subscribe", "publish"],
+      },
       ttl: 3600 * 1000,
     });
     res.status(200).json(tokenRequest);

@@ -53,6 +53,69 @@ const LANG_NAMES: Record<string, string> = {
   tr: "Turkish",
 };
 
+async function translateAndPublishForLang(
+  rawChunk: string,
+  langCode: string,
+  sourceLangCode: string,
+  seqId: number,
+  batchId: string,
+  publish: (lang: string, msg: BroadcastMessage) => void,
+  roomId: string,
+): Promise<void> {
+  const srcHint = LANG_NAMES[sourceLangCode]
+    ? `The speaker is speaking ${LANG_NAMES[sourceLangCode]}. `
+    : "";
+
+  let translated = "";
+
+  try {
+    const res = await fetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: rawChunk, to: langCode, srcHint, roomId }),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { translation?: string };
+      translated = data.translation?.trim() ?? "";
+    }
+  } catch {
+    /* fall through to GTX */
+  }
+
+  if (!translated) {
+    try {
+      const url =
+        `https://translate.googleapis.com/translate_a/single` +
+        `?client=gtx&sl=${encodeURIComponent(sourceLangCode)}&tl=${encodeURIComponent(langCode)}&dt=t` +
+        `&q=${encodeURIComponent(rawChunk)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = (await res.json()) as any[][][];
+        translated = ((data[0] ?? []) as any[])
+          .map((item: any) => item[0] as string)
+          .filter(Boolean)
+          .join("")
+          .trim();
+      }
+    } catch {
+      /* drop chunk if both fail */
+    }
+  }
+
+  if (!translated) return;
+
+  publish(langCode, {
+    type: "translation",
+    chunk: translated,
+    transcript: rawChunk,
+    sourceLang: sourceLangCode,
+    targetLang: langCode,
+    isFinal: true,
+    seqId,
+    batchId,
+  });
+}
+
 const GROQ_GUARD_PHRASES = [
   "what do you",
   "do you want",
@@ -88,9 +151,11 @@ interface Props {
   onStream: (s: MediaStream | null) => void;
   send: (msg: BroadcastMessage) => void;
   roomId?: string;
+  requestedLangs: ReadonlySet<string>;
+  publishToLang: (lang: string, msg: BroadcastMessage) => void;
 }
 
-export function MicrophonePanel({ onStream, send, roomId }: Props) {
+export function MicrophonePanel({ onStream, send, roomId, requestedLangs, publishToLang }: Props) {
   const store = useStore();
   const { devices, refresh: refreshDevices } = useAudioDevices();
   const webSpeech = useWebSpeechSTT();
@@ -122,6 +187,10 @@ export function MicrophonePanel({ onStream, send, roomId }: Props) {
   storeRef.current = store;
   const sendRef = useRef(send);
   sendRef.current = send;
+  const requestedLangsRef = useRef(requestedLangs);
+  requestedLangsRef.current = requestedLangs;
+  const publishToLangRef = useRef(publishToLang);
+  publishToLangRef.current = publishToLang;
   const webSpeechRef = useRef(webSpeech);
   webSpeechRef.current = webSpeech;
   const whisperRef = useRef(whisper);
@@ -473,6 +542,24 @@ export function MicrophonePanel({ onStream, send, roomId }: Props) {
       seqId,
       batchId: currentBatchIdRef.current,
     });
+
+    // Per-language translations — one server-side Groq call per distinct viewer language
+    const langs = requestedLangsRef.current;
+    if (langs.size > 0) {
+      const batchId = currentBatchIdRef.current;
+      for (const langCode of langs) {
+        if (langCode === targetLang) continue; // host's targetLang already on base channel
+        void translateAndPublishForLang(
+          rawChunk,
+          langCode,
+          sl,
+          seqId,
+          batchId,
+          publishToLangRef.current,
+          roomId ?? "",
+        );
+      }
+    }
   };
 
   // ── handleFinal — fires when a recognition window stops in a micro-pause ──
