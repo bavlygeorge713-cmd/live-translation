@@ -23,11 +23,8 @@ export default function App({ roomId }: AppProps) {
   const [recDuration, setRecDuration] = useState(0);
 
   const { translate } = useOnlineTranslation(roomId);
-  const { connected, viewerCount, send, requestedLangs, publishToLang } = useBroadcast(
-    "sender",
-    undefined,
-    roomId,
-  );
+  const { connected, viewerCount, send, requestedLangs, publishToLang } =
+    useBroadcast("sender", undefined, roomId);
 
   const roomName = roomId ? roomIdToDisplayName(roomId) : undefined;
 

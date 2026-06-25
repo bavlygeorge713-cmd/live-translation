@@ -22,7 +22,10 @@ function verifyJwt(token: string, secret: string): boolean {
       .digest("base64url");
     if (sig !== expected) return false;
     const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-    return typeof payload.exp === "number" && payload.exp > Math.floor(Date.now() / 1000);
+    return (
+      typeof payload.exp === "number" &&
+      payload.exp > Math.floor(Date.now() / 1000)
+    );
   } catch {
     return false;
   }

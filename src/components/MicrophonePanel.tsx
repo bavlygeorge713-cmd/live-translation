@@ -155,7 +155,13 @@ interface Props {
   publishToLang: (lang: string, msg: BroadcastMessage) => void;
 }
 
-export function MicrophonePanel({ onStream, send, roomId, requestedLangs, publishToLang }: Props) {
+export function MicrophonePanel({
+  onStream,
+  send,
+  roomId,
+  requestedLangs,
+  publishToLang,
+}: Props) {
   const store = useStore();
   const { devices, refresh: refreshDevices } = useAudioDevices();
   const webSpeech = useWebSpeechSTT();

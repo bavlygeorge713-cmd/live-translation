@@ -45,7 +45,9 @@ export function HostAuthGate({ children }: Props) {
       if (res.ok) {
         setAuthState("authenticated");
       } else if (res.status === 429) {
-        setLoginError("Too many failed attempts. Please wait a few minutes and try again.");
+        setLoginError(
+          "Too many failed attempts. Please wait a few minutes and try again.",
+        );
       } else if (res.status === 401) {
         setLoginError("Wrong username or password. Please try again.");
         if (passwordRef.current) {

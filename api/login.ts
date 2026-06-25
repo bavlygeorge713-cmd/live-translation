@@ -27,9 +27,13 @@ function verifyScrypt(password: string, stored: string): boolean {
 }
 
 export function signJwt(payload: object, secret: string): string {
-  const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+  const header = Buffer.from(
+    JSON.stringify({ alg: "HS256", typ: "JWT" }),
+  ).toString("base64url");
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const sig = createHmac("sha256", secret).update(`${header}.${body}`).digest("base64url");
+  const sig = createHmac("sha256", secret)
+    .update(`${header}.${body}`)
+    .digest("base64url");
   return `${header}.${body}.${sig}`;
 }
 
@@ -51,7 +55,9 @@ export default async function handler(req: any, res: any) {
 
   if (rec?.lockedUntil) {
     if (now < rec.lockedUntil) {
-      res.status(429).json({ error: "Too many failed attempts. Try again later." });
+      res
+        .status(429)
+        .json({ error: "Too many failed attempts. Try again later." });
       return;
     }
     ipAttempts.delete(ip);

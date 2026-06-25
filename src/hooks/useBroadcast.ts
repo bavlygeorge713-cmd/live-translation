@@ -252,5 +252,12 @@ export function useBroadcast(
     [isProd, sanitizedRoom],
   );
 
-  return { connected, viewerCount, lastMessage, send, requestedLangs, publishToLang };
+  return {
+    connected,
+    viewerCount,
+    lastMessage,
+    send,
+    requestedLangs,
+    publishToLang,
+  };
 }

@@ -14,7 +14,6 @@ import {
 const VIEWER_LANG_KEY = "ct_viewer_lang";
 const VIEWER_LANG_MANUAL_KEY = "ct_viewer_lang_manual";
 
-
 interface ViewerPageProps {
   roomId?: string;
 }
@@ -88,7 +87,9 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
 
   // ── TTS queue with index tracking ─────────────────────────────────────────
   const lastSpokenIndexRef = useRef(-1);
-  const ttsQueueRef = useRef<Array<{ text: string; index: number; lang: string }>>([]);
+  const ttsQueueRef = useRef<
+    Array<{ text: string; index: number; lang: string }>
+  >([]);
   const ttsBusyRef = useRef(false);
   const drainTtsRef = useRef<() => void>(() => {});
 
@@ -120,9 +121,15 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
       const langPrefix = lang.split("-")[0];
       // Prefer high-quality voice that matches the item's language
       const preferred =
-        voices.find((v) => v.lang.startsWith(langPrefix) && v.name.includes("Google")) ||
-        voices.find((v) => v.lang.startsWith(langPrefix) && v.name.includes("Microsoft")) ||
-        voices.find((v) => v.lang.startsWith(langPrefix) && v.name.includes("Natural")) ||
+        voices.find(
+          (v) => v.lang.startsWith(langPrefix) && v.name.includes("Google"),
+        ) ||
+        voices.find(
+          (v) => v.lang.startsWith(langPrefix) && v.name.includes("Microsoft"),
+        ) ||
+        voices.find(
+          (v) => v.lang.startsWith(langPrefix) && v.name.includes("Natural"),
+        ) ||
         voices.find((v) => v.lang.startsWith(langPrefix));
       if (preferred) utter.voice = preferred;
       // No matching voice: leave utter.voice unset; utter.lang still tells the OS the right language
@@ -188,7 +195,8 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
 
     for (let i = lastSpokenIndexRef.current + 1; i < n; i++) {
       const line = confirmedLines[i].trim();
-      const lang = confirmedLineLangsRef.current[i] ?? targetLangBcp47Ref.current;
+      const lang =
+        confirmedLineLangsRef.current[i] ?? targetLangBcp47Ref.current;
       if (line) ttsQueueRef.current.push({ text: line, index: i, lang });
     }
     lastSpokenIndexRef.current = n - 1;
@@ -346,7 +354,10 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
         setAllowedLangs(langs);
         setHasReceivedConfig(true);
         const currentLang = viewerLangRef.current;
-        if (currentLang !== "host" && (langs.length === 0 || !langs.includes(currentLang))) {
+        if (
+          currentLang !== "host" &&
+          (langs.length === 0 || !langs.includes(currentLang))
+        ) {
           setViewerLang("host", false);
           setLangRemovedNotice(true);
           setTimeout(() => setLangRemovedNotice(false), 4000);
@@ -365,7 +376,10 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
       // Per-lang channel messages carry targetLang=viewerLang, not the host broadcast lang
       if (!msg.fromPerLangChannel) {
         const incomingHostLang = msg.targetLang ?? "";
-        if (incomingHostLang && incomingHostLang !== hostTargetLangRef.current) {
+        if (
+          incomingHostLang &&
+          incomingHostLang !== hostTargetLangRef.current
+        ) {
           hostTargetLangRef.current = incomingHostLang;
           setHostTargetLang(incomingHostLang);
           if (!hasManuallySelectedRef.current) {
@@ -374,7 +388,11 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
               LANGUAGES.find((l) => l.code === incomingHostLang)?.bcp47 ??
               "en-US";
             targetLangBcp47Ref.current = bcp47;
-            try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
+            try {
+              window.speechSynthesis.cancel();
+            } catch {
+              /* ignore */
+            }
             ttsBusyRef.current = false;
             currentlyReadingIndexRef.current = -1;
             setCurrentlyReadingIndex(-1);
@@ -574,7 +592,11 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
                   LANGUAGES.filter(
                     (l) => l.code !== "auto" && allowedLangs.includes(l.code),
                   ).map((l) => (
-                    <option key={l.code} value={l.code} className="bg-[#0d0d14]">
+                    <option
+                      key={l.code}
+                      value={l.code}
+                      className="bg-[#0d0d14]"
+                    >
                       {l.flag} {l.name}
                     </option>
                   ))}

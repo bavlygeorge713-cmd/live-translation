@@ -57,7 +57,9 @@ export function Header({ roomName }: HeaderProps) {
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-1.5 text-xs text-slate-600">
             <Globe className="size-3.5 shrink-0" />
-            <span className="whitespace-nowrap">Web Speech · Online Translation</span>
+            <span className="whitespace-nowrap">
+              Web Speech · Online Translation
+            </span>
           </div>
 
           {auth && (

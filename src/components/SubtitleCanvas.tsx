@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { motion } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
 import { useStore } from "@/store/translationStore";
@@ -72,7 +78,8 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
     const btnBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
     const btnBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.12)";
     const btnColor = isDark ? "#94a3b8" : "#475569";
-    const colorTransition = "background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease";
+    const colorTransition =
+      "background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease";
 
     useImperativeHandle(ref, () => ({
       canvas: canvasRef.current,
