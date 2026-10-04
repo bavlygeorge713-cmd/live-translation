@@ -1,9 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Wifi, WifiOff, Globe, Volume2, VolumeX } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowRight,
+  Check,
+  ChevronDown,
+  CircleCheck,
+  Headphones,
+  Languages,
+  Moon,
+  Radio,
+  Search,
+  Sun,
+  Volume2,
+  X,
+} from "lucide-react";
+import { cx, LogoMark, RButton } from "@/components/ui/redesign";
 import { useBroadcast, type BroadcastMessage } from "@/hooks/useBroadcast";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
-import { LANGUAGES } from "@/types";
+import { LANGUAGES, type Language } from "@/types";
 import { roomIdToDisplayName } from "@/lib/roomUtils";
 import {
   createWordPacer,
@@ -13,6 +28,7 @@ import {
 
 const VIEWER_LANG_KEY = "ct_viewer_lang";
 const VIEWER_LANG_MANUAL_KEY = "ct_viewer_lang_manual";
+const VIEWER_THEME_KEY = "ct_viewer_theme";
 
 interface ViewerPageProps {
   roomId?: string;
@@ -307,6 +323,9 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
 
   // ── Misc ───────────────────────────────────────────────────────────────────
   const scrollRef = useRef<HTMLDivElement>(null);
+  // "Return to live": true while the viewer has scrolled up to re-read
+  const [scrolledAway, setScrolledAway] = useState(false);
+  const scrolledAwayRef = useRef(false);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const viewerLangInfo = LANGUAGES.find((l) => l.code === effectiveLang);
@@ -465,7 +484,7 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
   };
 
   useEffect(() => {
-    if (scrollRef.current)
+    if (scrollRef.current && !scrolledAwayRef.current)
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [confirmedLines, liveLine]);
 
@@ -483,262 +502,531 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
 
-  // ── Font size based on total text length ──────────────────────────────────
-  const totalLen = confirmedLines.join(" ").length + liveLine.length;
-  const fontSize =
-    totalLen === 0
-      ? 52
-      : totalLen < 120
-        ? 52
-        : totalLen < 300
-          ? 44
-          : totalLen < 600
-            ? 36
-            : totalLen < 1000
-              ? 30
-              : totalLen < 1600
-                ? 24
-                : 20;
+  // ── Presentation-only state (redesign): theme, language sheet ─────────────
+  const [dark, setDark] = useState(
+    () => localStorage.getItem(VIEWER_THEME_KEY) === "dark",
+  );
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    localStorage.setItem(VIEWER_THEME_KEY, next ? "dark" : "light");
+  };
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const away = el.scrollHeight - el.scrollTop - el.clientHeight > 120;
+    scrolledAwayRef.current = away;
+    setScrolledAway(away);
+  };
+  const returnToLive = () => {
+    scrolledAwayRef.current = false;
+    setScrolledAway(false);
+    if (scrollRef.current)
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  };
+
+  const followHost = viewerLang === "host";
+  const selectableLangs =
+    hasReceivedConfig && allowedLangs.length > 0
+      ? LANGUAGES.filter(
+          (l) => l.code !== "auto" && allowedLangs.includes(l.code),
+        )
+      : [];
+  const ownLangInfo = LANGUAGES.find((l) => l.code === viewerLang);
+  const langLabel = followHost
+    ? "Follow Host"
+    : ownLangInfo
+      ? `${ownLangInfo.flag} ${ownLangInfo.name}`
+      : viewerLang;
+  const lastIdx = confirmedLines.length - 1;
+  const captionStyle: React.CSSProperties = { unicodeBidi: "plaintext" };
 
   return (
-    <div className="h-screen bg-[#08080f] flex flex-col text-white overflow-hidden">
-      {/* ── Tap-to-start overlay ── */}
+    <div
+      className={cx(
+        dark ? "canvas-dark" : "canvas-light",
+        "rd-page flex h-[100dvh] flex-col overflow-hidden bg-[var(--canvas-bg)] text-[var(--canvas-text)] transition-colors",
+      )}
+      style={{ colorScheme: dark ? "dark" : "light" }}
+    >
+      {/* ── Join screen — its button is the tap-to-unlock gesture for audio ── */}
       {!audioUnlocked && (
-        <div
-          onClick={handleUnlockAudio}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center cursor-pointer bg-[#08080f] select-none"
-        >
-          <motion.div
-            animate={{ scale: [1, 1.22, 1], opacity: [0.8, 1, 0.8] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="mb-8 rounded-full bg-blue-500/10 border-2 border-blue-500/40 p-10"
-          >
-            <Volume2 className="size-24 text-blue-400" />
-          </motion.div>
-          <p className="text-white text-3xl font-bold px-6 text-center">
-            Tap to Enable Audio
-          </p>
-          <p className="text-slate-400 text-base mt-3 px-8 text-center">
-            Tap anywhere to start live translation
-          </p>
-          <p className="text-slate-600 text-sm mt-4">
-            Required by browser for audio playback
-          </p>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[#F4F7FB] px-5 py-8 text-slate-900">
+          <div className="mx-auto flex min-h-[calc(100dvh-64px)] max-w-[460px] items-center justify-center">
+            <div className="w-full rounded-[22px] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,.08)] sm:p-7">
+              <div className="mb-7 flex justify-center">
+                <LogoMark />
+              </div>
+              <div className="mb-6 text-center">
+                {connected ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 ring-1 ring-emerald-200/70">
+                    <span className="size-1.5 rounded-full bg-emerald-500" />{" "}
+                    Live
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500 ring-1 ring-slate-200">
+                    <span className="size-1.5 rounded-full bg-slate-400" />{" "}
+                    Connecting…
+                  </span>
+                )}
+                <h1 className="mt-4 text-[24px] font-semibold tracking-[-.035em] text-slate-950">
+                  {roomName ?? "Conference Translator"}
+                </h1>
+                <p className="mt-1.5 text-[12px] text-slate-500">
+                  Live Translation
+                </p>
+              </div>
+
+              <div className="mb-5 rounded-2xl border border-slate-200 p-2">
+                <button
+                  onClick={() => setViewerLang("host", true)}
+                  className={cx(
+                    "flex min-h-[62px] w-full items-center gap-3 rounded-xl px-3 text-left transition",
+                    followHost
+                      ? "bg-brand-50 ring-1 ring-brand-100"
+                      : "hover:bg-slate-50",
+                  )}
+                >
+                  <div
+                    className={cx(
+                      "grid size-10 shrink-0 place-items-center rounded-xl",
+                      followHost
+                        ? "bg-brand-600 text-white"
+                        : "bg-slate-100 text-slate-500",
+                    )}
+                  >
+                    <Radio className="size-[18px]" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold">Follow Host</div>
+                    <div className="mt-1 text-[10px] text-slate-500">
+                      Automatically follow the presenter’s language
+                    </div>
+                  </div>
+                  {followHost && (
+                    <CircleCheck className="size-[18px] text-brand-600" />
+                  )}
+                </button>
+                <div className="my-1 h-px bg-slate-100" />
+                <button
+                  onClick={() => setSheetOpen(true)}
+                  className={cx(
+                    "flex min-h-[62px] w-full items-center gap-3 rounded-xl px-3 text-left transition",
+                    !followHost
+                      ? "bg-brand-50 ring-1 ring-brand-100"
+                      : "hover:bg-slate-50",
+                  )}
+                >
+                  <div
+                    className={cx(
+                      "grid size-10 shrink-0 place-items-center rounded-xl",
+                      !followHost
+                        ? "bg-brand-600 text-white"
+                        : "bg-slate-100 text-slate-500",
+                    )}
+                  >
+                    <Languages className="size-[18px]" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold">
+                      Choose language
+                    </div>
+                    <div className="mt-1 text-[10px] text-slate-500">
+                      {!followHost
+                        ? langLabel
+                        : "Select your preferred translation"}
+                    </div>
+                  </div>
+                  <ChevronDown className="size-4 text-slate-400" />
+                </button>
+              </div>
+
+              <RButton
+                variant="primary"
+                size="lg"
+                className="w-full"
+                onClick={handleUnlockAudio}
+              >
+                Join live translation <ArrowRight className="size-4" />
+              </RButton>
+              <div className="mt-5 flex items-center justify-center gap-2 text-[10px] font-medium text-slate-400">
+                <Volume2 className="size-3.5" /> Joining also enables audio
+                playback on this device
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
       {/* ── Header ── */}
-      <div className="shrink-0 z-40 bg-[#08080f]/95 backdrop-blur-md border-b border-white/[0.06]">
-        <div className="flex items-center justify-between px-5 pt-3 pb-2 gap-4">
-          <div className="flex items-center gap-2 min-w-0">
-            <div
-              className="size-6 shrink-0 rounded-lg bg-gradient-to-br from-blue-500/20 to-violet-500/20
-              flex items-center justify-center border border-white/10"
-            >
-              <Globe className="size-3 text-blue-400" />
+      <header className="z-20 shrink-0 border-b border-[var(--canvas-border)] bg-[var(--canvas-bg)] px-5 py-3.5">
+        <div className="mx-auto max-w-[528px]">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="truncate text-[13px] font-semibold text-[var(--canvas-text)]">
+                {roomName ?? "Conference Translator"}
+              </div>
+              <div className="mt-0.5 truncate text-[10px] text-[var(--canvas-meta)]">
+                Live Translation
+                {viewerLangInfo &&
+                  ` · ${viewerLangInfo.flag} ${viewerLangInfo.name}`}
+              </div>
             </div>
-            <span className="text-sm font-semibold text-slate-200 truncate">
-              {roomName ?? "Conference Translator"}
-            </span>
-            <span className="text-[11px] text-slate-600 shrink-0">
-              · Live View
-            </span>
-          </div>
-          <div
-            className={`shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border ${
-              connected
-                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                : "bg-slate-500/10 border-slate-500/20 text-slate-500"
-            }`}
-          >
-            {connected ? (
-              <>
-                <Wifi className="size-3" />
-                <span>Connected</span>
-              </>
-            ) : (
-              <>
-                <WifiOff className="size-3" />
-                <span>Connecting…</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {langRemovedNotice && (
-          <div className="mx-5 mb-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-300">
-            This language is no longer available. Switched to Follow Host.
-          </div>
-        )}
-
-        <div className="flex items-center justify-between px-5 pb-2.5 gap-3 flex-wrap">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[11px] text-slate-500 shrink-0">
-              My language:
-            </span>
-            <div className="relative">
-              <select
-                value={viewerLang}
-                onChange={(e) => setViewerLang(e.target.value, true)}
-                className="appearance-none bg-white/5 border border-white/10 text-slate-300
-                  text-[11px] rounded-full px-3 py-1.5 pr-6 outline-none cursor-pointer
-                  focus:border-blue-500/40 transition-colors max-w-[170px]"
-              >
-                <option value="host" className="bg-[#0d0d14]">
-                  🌐 Follow Host
-                </option>
-                {hasReceivedConfig &&
-                  allowedLangs.length > 0 &&
-                  LANGUAGES.filter(
-                    (l) => l.code !== "auto" && allowedLangs.includes(l.code),
-                  ).map((l) => (
-                    <option
-                      key={l.code}
-                      value={l.code}
-                      className="bg-[#0d0d14]"
-                    >
-                      {l.flag} {l.name}
-                    </option>
-                  ))}
-              </select>
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none text-[10px]">
-                ▾
-              </span>
-            </div>
-          </div>
-
-          <div className="shrink-0 flex items-center gap-2">
-            <button
-              onClick={handleMuteToggle}
-              title={ttsEnabled ? "Mute audio" : "Enable audio"}
-              className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full border transition-colors ${
-                ttsEnabled
-                  ? "bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/20"
-                  : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:border-slate-400/30"
-              }`}
-            >
-              {ttsEnabled ? (
-                <Volume2 className="size-3.5" />
+            <div className="flex shrink-0 items-center gap-1.5">
+              {connected ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                  <span className="size-1.5 rounded-full bg-emerald-500" /> Live
+                </span>
               ) : (
-                <VolumeX className="size-3.5" />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--canvas-meta)]">
+                  <span className="size-1.5 rounded-full bg-slate-400" />{" "}
+                  Connecting…
+                </span>
               )}
-              <span>{ttsEnabled ? "Audio on" : "Audio off"}</span>
+              <button
+                onClick={toggleTheme}
+                aria-label={dark ? "Use light theme" : "Use dark theme"}
+                title={dark ? "Use light theme" : "Use dark theme"}
+                className="focus-ring grid size-9 place-items-center rounded-lg text-[var(--canvas-meta)] hover:bg-[var(--canvas-speaking)]"
+              >
+                {dark ? (
+                  <Sun className="size-4" />
+                ) : (
+                  <Moon className="size-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {langRemovedNotice && (
+            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-600">
+              This language is no longer available. Switched to Follow Host.
+            </div>
+          )}
+
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              onClick={() => setSheetOpen(true)}
+              className="focus-ring flex h-10 min-w-0 flex-1 items-center justify-between rounded-xl border border-[var(--canvas-border)] px-3 text-left"
+            >
+              <span className="flex min-w-0 items-center gap-2 text-[12px] font-medium">
+                <Languages className="size-4 shrink-0 text-[var(--canvas-meta)]" />
+                <span className="truncate">
+                  {followHost ? "Following host" : langLabel}
+                </span>
+              </span>
+              <ChevronDown className="size-4 shrink-0 text-[var(--canvas-meta)]" />
             </button>
 
             {ttsEnabled && availableVoices.length > 0 && (
-              <div className="relative">
+              <div className="relative w-[132px] shrink-0">
                 <select
                   value={selectedVoiceURI}
                   onChange={(e) => setSelectedVoiceURI(e.target.value)}
-                  className="appearance-none bg-white/5 border border-white/10 text-slate-400
-                    text-[11px] rounded-full px-3 py-1.5 pr-6 outline-none cursor-pointer
-                    focus:border-blue-500/40 transition-colors w-[130px]"
+                  aria-label="Voice"
+                  className="focus-ring h-10 w-full appearance-none rounded-xl border border-[var(--canvas-border)] bg-[var(--canvas-bg)] pl-3 pr-8 text-[12px] font-medium text-[var(--canvas-text)] outline-none"
                 >
-                  <option value="" className="bg-[#0d0d14]">
-                    Auto voice
-                  </option>
+                  <option value="">Auto voice</option>
                   {availableVoices.map((v) => (
-                    <option
-                      key={v.voiceURI}
-                      value={v.voiceURI}
-                      className="bg-[#0d0d14]"
-                    >
+                    <option key={v.voiceURI} value={v.voiceURI}>
                       {v.name}
                     </option>
                   ))}
                 </select>
-                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none text-[10px]">
-                  ▾
-                </span>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[var(--canvas-meta)]" />
               </div>
             )}
           </div>
         </div>
+      </header>
 
-        <div className="h-[3px] bg-gradient-to-r from-transparent via-blue-500/40 to-transparent" />
-      </div>
-
-      {/* ── Scrollable translation area ── */}
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-8 py-8">
-        {confirmedLines.length === 0 && !liveLine ? (
-          <div className="h-full flex flex-col items-center justify-center gap-5 text-center">
-            <div className="flex justify-center gap-2">
-              {[0, 1, 2].map((i) => (
-                <motion.div
-                  key={i}
-                  className="size-2.5 rounded-full bg-blue-500/40"
-                  animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }}
-                  transition={{
-                    duration: 1.4,
-                    repeat: Infinity,
-                    delay: i * 0.25,
-                  }}
-                />
-              ))}
-            </div>
-            <p className="text-slate-500 text-lg font-light">
-              {connected
-                ? "Waiting for the presenter to speak…"
-                : "Connecting to presenter…"}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {viewerLangInfo && (
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-2xl">{viewerLangInfo.flag}</span>
-                <span className="text-xs uppercase tracking-[0.2em] text-slate-500 font-medium">
-                  {viewerLangInfo.name}
-                </span>
-              </div>
-            )}
-
-            {/* Confirmed (frozen) lines — Spotify lyrics effect */}
-            {confirmedLines.map((line, i) => {
-              const isActive = i === currentlyReadingIndex;
-              const isFuture =
-                currentlyReadingIndex >= 0 && i > currentlyReadingIndex;
-              return (
-                <p
-                  key={i}
-                  dir={isRtl ? "rtl" : "ltr"}
-                  className="font-semibold leading-relaxed"
-                  style={{
-                    fontSize: `${isActive ? fontSize + 2 : fontSize}px`,
-                    lineHeight: 1.45,
-                    color: isFuture ? "#475569" : "#ffffff",
-                    transition: "color 0.3s ease, font-size 0.2s ease",
-                  }}
-                >
-                  {line}
+      {/* ── Scrollable caption area ── */}
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="hide-scrollbar h-full overflow-y-auto px-5 pb-10 pt-8"
+        >
+          <main
+            className="caption-font mx-auto max-w-[528px]"
+            lang={effectiveLang}
+            dir={isRtl ? "rtl" : "ltr"}
+          >
+            {confirmedLines.length === 0 && !liveLine ? (
+              <div
+                dir="ltr"
+                className="flex min-h-[50vh] flex-col items-center justify-center gap-5 text-center"
+              >
+                <div className="flex justify-center gap-2">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="size-2.5 rounded-full bg-brand-500/50"
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }}
+                      transition={{
+                        duration: 1.4,
+                        repeat: Infinity,
+                        delay: i * 0.25,
+                      }}
+                    />
+                  ))}
+                </div>
+                <p className="font-sans text-[15px] text-[var(--canvas-meta)]">
+                  {connected
+                    ? "Waiting for the presenter to speak…"
+                    : "Connecting to presenter…"}
                 </p>
-              );
-            })}
-
-            {/* Live evolving line — the word pacer types here, then freezes into confirmedLines */}
-            {liveLine && (
-              <p
-                dir={isRtl ? "rtl" : "ltr"}
-                className="font-semibold leading-relaxed"
+              </div>
+            ) : (
+              <div
+                className={cx("space-y-8", isRtl && "caption-rtl text-right")}
                 style={{
-                  fontSize: `${fontSize}px`,
-                  lineHeight: 1.45,
-                  color: "#ffffff",
+                  fontSize: isRtl ? 29 : 27,
+                  lineHeight: isRtl ? 1.65 : 1.52,
                 }}
               >
-                {liveLine}
-              </p>
+                {/* Confirmed (frozen) lines — older lines fade; the line TTS is
+                    reading stays at full strength with a "Speaking now" tag */}
+                {confirmedLines.map((line, i) => {
+                  const isReading = i === currentlyReadingIndex;
+                  const isCurrent = !liveLine && i === lastIdx;
+                  const isPrev = liveLine ? i === lastIdx : i === lastIdx - 1;
+                  const speakingTag = isReading && (
+                    <div className="mt-3 flex items-center gap-2 font-sans text-[10px] font-semibold text-[var(--canvas-edge)]">
+                      <Volume2 className="size-3.5" /> Speaking now
+                    </div>
+                  );
+                  if (isCurrent) {
+                    return (
+                      <div
+                        key={i}
+                        className="rounded-xl border-s-[3px] border-[var(--canvas-edge)] bg-[var(--canvas-speaking)] px-4 py-3.5 transition-colors duration-150"
+                      >
+                        <p
+                          dir={isRtl ? "rtl" : "ltr"}
+                          style={captionStyle}
+                          className="font-medium tracking-[-0.015em] text-[var(--canvas-text)]"
+                        >
+                          {line}
+                        </p>
+                        {speakingTag}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={i}>
+                      <p
+                        dir={isRtl ? "rtl" : "ltr"}
+                        style={captionStyle}
+                        className={cx(
+                          "font-medium transition-colors duration-300",
+                          isReading
+                            ? "text-[var(--canvas-text)]"
+                            : isPrev
+                              ? "text-[var(--canvas-prev)] opacity-85"
+                              : "text-[var(--canvas-old)] opacity-55",
+                        )}
+                      >
+                        {line}
+                      </p>
+                      {speakingTag}
+                    </div>
+                  );
+                })}
+
+                {/* Live evolving line — the word pacer types here, then freezes into confirmedLines */}
+                {liveLine && (
+                  <div className="rounded-xl border-s-[3px] border-[var(--canvas-edge)] bg-[var(--canvas-speaking)] px-4 py-3.5 transition-colors duration-150">
+                    <p
+                      dir={isRtl ? "rtl" : "ltr"}
+                      style={captionStyle}
+                      className="font-medium tracking-[-0.015em] text-[var(--canvas-text)]"
+                    >
+                      {liveLine.split(" ").map((word, i) => (
+                        <span key={i} className="token-in">
+                          <bdi>{word}</bdi>{" "}
+                        </span>
+                      ))}
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
-          </div>
+          </main>
+        </div>
+
+        {scrolledAway && (
+          <button
+            onClick={returnToLive}
+            className="focus-ring absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-full bg-brand-600 px-4 py-2.5 text-[12px] font-semibold text-white shadow-lg"
+          >
+            <ArrowDown className="mr-1.5 inline size-3.5" /> Return to live
+          </button>
         )}
       </div>
 
-      {/* ── Bottom accent ── */}
-      <div className="shrink-0 h-[2px] bg-gradient-to-r from-transparent via-violet-500/20 to-transparent" />
-      <div className="shrink-0 py-2 text-center">
-        <p className="text-[10px] text-slate-700">
-          Conference Translator · Live Translation View
-        </p>
+      {/* ── Bottom bar ── */}
+      <div className="safe-bottom z-30 shrink-0 border-t border-[var(--canvas-border)] bg-[var(--canvas-bg)] px-4 pt-3">
+        <div className="mx-auto flex max-w-[528px] items-center gap-2">
+          <button
+            onClick={handleMuteToggle}
+            title={ttsEnabled ? "Mute audio" : "Enable audio"}
+            className={cx(
+              "focus-ring flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border text-[13px] font-semibold transition",
+              ttsEnabled
+                ? "border-brand-300 bg-brand-500/10 text-brand-500"
+                : "border-[var(--canvas-border)] text-[var(--canvas-text)]",
+            )}
+          >
+            {ttsEnabled ? (
+              <Volume2 className="size-[18px]" />
+            ) : (
+              <Headphones className="size-[18px]" />
+            )}{" "}
+            {ttsEnabled ? "Audio on" : "Enable audio"}
+          </button>
+          <button
+            onClick={() => setSheetOpen(true)}
+            className="focus-ring flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--canvas-border)] px-3 text-[13px] font-semibold text-[var(--canvas-text)]"
+          >
+            <Languages className="size-[18px] shrink-0" />
+            <span className="truncate">{langLabel}</span>
+          </button>
+        </div>
+      </div>
+
+      {sheetOpen && (
+        <LanguageSheet
+          followHost={followHost}
+          selectedCode={viewerLang}
+          options={selectableLangs}
+          onChoose={(code) => {
+            setViewerLang(code, true);
+            setSheetOpen(false);
+          }}
+          onClose={() => setSheetOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Language bottom sheet (presentational) ───────────────────────────────────
+function LanguageSheet({
+  followHost,
+  selectedCode,
+  options,
+  onChoose,
+  onClose,
+}: {
+  followHost: boolean;
+  selectedCode: string;
+  options: Language[];
+  onChoose: (code: string) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const filtered = options.filter((l) =>
+    `${l.name} ${l.code}`.toLowerCase().includes(query.toLowerCase()),
+  );
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-end bg-slate-950/35"
+      onMouseDown={onClose}
+    >
+      <div
+        onMouseDown={(e) => e.stopPropagation()}
+        className="mx-auto max-h-[76vh] w-full max-w-[560px] rounded-t-[22px] bg-white font-sans text-slate-900 shadow-modal"
+        style={{ colorScheme: "light" }}
+      >
+        <div className="mx-auto mt-2.5 h-1 w-10 rounded-full bg-slate-300" />
+        <div className="flex items-center justify-between px-5 pb-3 pt-4">
+          <div>
+            <div className="text-[18px] font-semibold tracking-[-.02em]">
+              Translation language
+            </div>
+            <div className="mt-1 text-[11px] text-slate-500">
+              Choose what you want to read
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="grid size-9 place-items-center rounded-lg bg-slate-100 text-slate-500"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        {options.length > 6 && (
+          <div className="px-5 pb-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search languages…"
+                className="h-11 w-full rounded-[10px] border border-slate-200 bg-slate-50 pl-9 pr-3 text-[13px] outline-none focus:border-brand-500"
+              />
+            </div>
+          </div>
+        )}
+        <div className="thin-scrollbar safe-bottom max-h-[52vh] overflow-y-auto px-3">
+          <button
+            onClick={() => onChoose("host")}
+            className={cx(
+              "flex min-h-[62px] w-full items-center gap-3 rounded-xl px-3 text-left",
+              followHost ? "bg-brand-50" : "hover:bg-slate-50",
+            )}
+          >
+            <div
+              className={cx(
+                "grid size-9 shrink-0 place-items-center rounded-xl",
+                followHost
+                  ? "bg-brand-600 text-white"
+                  : "bg-slate-100 text-slate-500",
+              )}
+            >
+              <Radio className="size-4" />
+            </div>
+            <div className="flex-1">
+              <div className="text-[13px] font-semibold">Follow Host</div>
+              <div className="mt-1 text-[10px] text-slate-500">
+                Use the language selected by the presenter
+              </div>
+            </div>
+            {followHost && <Check className="size-4 text-brand-600" />}
+          </button>
+          <div className="my-2 h-px bg-slate-200" />
+          {options.length === 0 && (
+            <p className="px-3 py-4 text-center text-[12px] text-slate-500">
+              The host hasn’t enabled any other languages for this room yet.
+            </p>
+          )}
+          {filtered.map((l) => {
+            const isSelected = !followHost && selectedCode === l.code;
+            return (
+              <button
+                key={l.code}
+                onClick={() => onChoose(l.code)}
+                className={cx(
+                  "flex min-h-[54px] w-full items-center gap-3 rounded-xl px-3 text-left",
+                  isSelected ? "bg-brand-50" : "hover:bg-slate-50",
+                )}
+              >
+                <span className="text-[20px] leading-none">{l.flag}</span>
+                <div className="flex-1">
+                  <div className="text-[13px] font-medium">{l.name}</div>
+                  <div className="mt-0.5 text-[10px] uppercase tracking-wider text-slate-500">
+                    {l.code}
+                  </div>
+                </div>
+                {isSelected && <Check className="size-4 text-brand-600" />}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

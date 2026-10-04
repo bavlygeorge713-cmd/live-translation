@@ -44,3 +44,113 @@ input[type="range"]::-webkit-slider-thumb {
 
 /* Select styling for dark mode */
 select option { background: #111114; color: #f1f5f9; }
+
+/* ── Redesign tokens ──────────────────────────────────────────────────────────
+   Used by the redesigned pages (login, rooms, viewer). Those pages mark their
+   root element with .rd-page; everything above stays the default so the host
+   console keeps its original dark theme. */
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --app: #F4F7FB;
+  --surface: #FFFFFF;
+  --surface-2: #F8FAFC;
+  --surface-3: #F1F5F9;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --text: #0F172A;
+  --text-2: #475569;
+  --text-3: #64748B;
+  --muted: #94A3B8;
+}
+
+.dark-shell {
+  --app: #090F18;
+  --surface: #111925;
+  --surface-2: #16202D;
+  --surface-3: #1B2736;
+  --border: #263445;
+  --border-strong: #35465A;
+  --text: #F8FAFC;
+  --text-2: #CBD5E1;
+  --text-3: #94A3B8;
+  --muted: #64748B;
+  color-scheme: dark;
+}
+
+/* Light page chrome while a redesigned page is mounted */
+html:has(.rd-page),
+body:has(.rd-page) {
+  background: var(--app);
+  color: var(--text);
+}
+html:has(.rd-page) { min-width: 320px; }
+html:has(.rd-page) ::-webkit-scrollbar { width: 8px; height: 8px; }
+html:has(.rd-page) ::-webkit-scrollbar-track { background: transparent; }
+html:has(.rd-page) ::-webkit-scrollbar-thumb { background: rgba(100,116,139,.28); border-radius: 999px; }
+html:has(.rd-page) ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,.45); }
+.rd-page button { -webkit-tap-highlight-color: transparent; }
+.rd-page select option { background: #FFFFFF; color: #0F172A; }
+.rd-page.canvas-dark select option { background: #080D14; color: #F8FAFC; }
+
+.surface { background: var(--surface); }
+.surface-2 { background: var(--surface-2); }
+.text-primary { color: var(--text); }
+.text-secondary { color: var(--text-2); }
+.text-tertiary { color: var(--text-3); }
+.border-app { border-color: var(--border); }
+
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px #3B82F6;
+}
+
+.canvas-dark {
+  --canvas-bg: #080D14;
+  --canvas-text: #F8FAFC;
+  --canvas-prev: #CBD5E1;
+  --canvas-old: #8A99AC;
+  --canvas-meta: #718096;
+  --canvas-border: #202C3A;
+  --canvas-speaking: rgba(59,130,246,.12);
+  --canvas-edge: #60A5FA;
+}
+
+.canvas-light {
+  --canvas-bg: #FBFCFE;
+  --canvas-text: #101828;
+  --canvas-prev: #344054;
+  --canvas-old: #667085;
+  --canvas-meta: #667085;
+  --canvas-border: #E4E7EC;
+  --canvas-speaking: #EFF6FF;
+  --canvas-edge: #2563EB;
+}
+
+.caption-font { font-family: "Noto Sans", "Noto Sans Arabic", sans-serif; }
+.caption-rtl { font-family: "Noto Sans Arabic", "Noto Sans", sans-serif; letter-spacing: 0; }
+
+@keyframes caption-token-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.token-in { display: inline; animation: caption-token-in 90ms cubic-bezier(.2,0,0,1) both; }
+
+@keyframes level {
+  0%, 100% { transform: scaleY(.25); }
+  50% { transform: scaleY(1); }
+}
+.level-bar { transform-origin: center bottom; animation: level .9s ease-in-out infinite; }
+.level-bar:nth-child(2){ animation-delay: .12s; }
+.level-bar:nth-child(3){ animation-delay: .24s; }
+.level-bar:nth-child(4){ animation-delay: .36s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rd-page *, .rd-page *::before, .rd-page *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+.hide-scrollbar::-webkit-scrollbar { width: 0; height: 0; }
+.thin-scrollbar::-webkit-scrollbar { width: 8px; }
+.thin-scrollbar::-webkit-scrollbar-thumb { background: rgba(100,116,139,.28); border-radius: 999px; }
+
+.safe-bottom { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
