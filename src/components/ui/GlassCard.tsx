@@ -9,11 +9,9 @@ interface Props extends HTMLMotionProps<"div"> {
 }
 
 const GLOW = {
-  blue: "hover:shadow-[0_0_30px_rgba(59,130,246,0.12)] hover:border-blue-500/20",
-  purple:
-    "hover:shadow-[0_0_30px_rgba(139,92,246,0.12)] hover:border-violet-500/20",
-  emerald:
-    "hover:shadow-[0_0_30px_rgba(16,185,129,0.12)] hover:border-emerald-500/20",
+  blue: "",
+  purple: "",
+  emerald: "",
   none: "",
 };
 const PAD = { none: "", sm: "p-3", md: "p-5" };
@@ -28,8 +26,7 @@ export function GlassCard({
   return (
     <motion.div
       className={clsx(
-        "rounded-2xl border border-white/[0.06] transition-all duration-300",
-        "bg-[rgba(16,16,20,0.7)] backdrop-blur-xl",
+        "rounded-2xl border border-app bg-[var(--surface)] shadow-soft",
         GLOW[glow],
         PAD[padding],
         className,

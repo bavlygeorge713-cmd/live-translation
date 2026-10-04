@@ -60,15 +60,15 @@ export function ExportSidebar({
     <div className="flex flex-col gap-4">
       {/* ── Video recording ─────────────────────────── */}
       <GlassCard glow="purple">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="size-7 rounded-lg bg-violet-500/10 flex items-center justify-center">
-            <Video className="size-3.5 text-violet-400" />
+        <div className="mb-4 flex items-center gap-3">
+          <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--surface-2)] text-tertiary">
+            <Video className="size-4" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-slate-200">
+            <h3 className="text-[14px] font-semibold text-primary">
               Video Recording
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="mt-0.5 text-[11px] text-tertiary">
               Live canvas + mic audio · MP4 / WebM
             </p>
           </div>
@@ -76,12 +76,12 @@ export function ExportSidebar({
 
         {/* Timer */}
         {isRecording && (
-          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2 mb-3">
-            <span className="size-2 rounded-full bg-red-500 animate-[recordPulse_1.5s_ease-in-out_infinite]" />
-            <span className="text-xs font-mono text-red-300">
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2">
+            <span className="size-2 rounded-full bg-rose-500 animate-[recordPulse_1.5s_ease-in-out_infinite]" />
+            <span className="font-mono text-[12px] font-semibold text-rose-700">
               {fmt(duration)}
             </span>
-            <span className="text-xs text-slate-500">Recording…</span>
+            <span className="text-[12px] text-secondary">Recording…</span>
           </div>
         )}
 
@@ -107,10 +107,12 @@ export function ExportSidebar({
           )}
         </div>
 
-        {recError && <p className="text-xs text-red-400 mt-2">{recError}</p>}
+        {recError && (
+          <p className="mt-2 text-[12px] text-rose-700">{recError}</p>
+        )}
 
         {!isRecording && (
-          <p className="text-[10px] text-slate-600 mt-2">
+          <p className="mt-2 text-[11px] text-tertiary">
             Auto-downloads as .mp4 (or .webm if MP4 unsupported)
           </p>
         )}
@@ -118,15 +120,15 @@ export function ExportSidebar({
 
       {/* ── Text export ──────────────────────────────── */}
       <GlassCard>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="size-7 rounded-lg bg-white/5 flex items-center justify-center">
-            <FileText className="size-3.5 text-slate-400" />
+        <div className="mb-3 flex items-center gap-3">
+          <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--surface-2)] text-tertiary">
+            <FileText className="size-4" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-slate-200">
+            <h3 className="text-[14px] font-semibold text-primary">
               Text Export
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="mt-0.5 text-[11px] text-tertiary">
               {history.length} translation{history.length !== 1 ? "s" : ""}
             </p>
           </div>
@@ -156,14 +158,14 @@ export function ExportSidebar({
       {/* ── History ──────────────────────────────────── */}
       <GlassCard>
         <div
-          className="flex items-center justify-between cursor-pointer mb-3"
+          className="mb-3 flex cursor-pointer items-center justify-between"
           onClick={() => setShowHistory((v) => !v)}
         >
-          <div className="flex items-center gap-2">
-            <div className="size-7 rounded-lg bg-white/5 flex items-center justify-center">
-              <Clock className="size-3.5 text-slate-400" />
+          <div className="flex items-center gap-3">
+            <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--surface-2)] text-tertiary">
+              <Clock className="size-4" />
             </div>
-            <span className="text-sm font-semibold text-slate-200">
+            <span className="text-[14px] font-semibold text-primary">
               History
             </span>
             {history.length > 0 && (
@@ -177,15 +179,15 @@ export function ExportSidebar({
                   e.stopPropagation();
                   clearHistory();
                 }}
-                className="text-slate-600 hover:text-red-400 transition-colors"
+                className="rounded-md p-1 text-tertiary transition-colors hover:bg-rose-50 hover:text-rose-600"
               >
                 <Trash2 className="size-3.5" />
               </button>
             )}
             {showHistory ? (
-              <ChevronUp className="size-4 text-slate-500" />
+              <ChevronUp className="size-4 text-tertiary" />
             ) : (
-              <ChevronDown className="size-4 text-slate-500" />
+              <ChevronDown className="size-4 text-tertiary" />
             )}
           </div>
         </div>
@@ -199,32 +201,32 @@ export function ExportSidebar({
               className="overflow-hidden"
             >
               {history.length === 0 ? (
-                <p className="text-xs text-slate-600 text-center py-3">
+                <p className="py-3 text-center text-[12px] text-tertiary">
                   No translations yet
                 </p>
               ) : (
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                <div className="thin-scrollbar max-h-60 space-y-2 overflow-y-auto pr-1">
                   {history.map((e) => (
                     <motion.div
                       key={e.id}
                       initial={{ opacity: 0, x: -6 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2.5 space-y-1"
+                      className="space-y-1 rounded-xl border border-app bg-[var(--surface-2)] px-3 py-2.5"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-slate-600">
+                        <span className="text-[10px] font-semibold tabular-nums text-tertiary">
                           {new Date(e.timestamp).toLocaleTimeString()}
                         </span>
                         <div className="flex gap-1">
                           <Badge variant="slate">{e.sourceLang}</Badge>
-                          <span className="text-slate-700 text-xs">→</span>
+                          <span className="text-xs text-tertiary">→</span>
                           <Badge variant="blue">{e.targetLang}</Badge>
                         </div>
                       </div>
-                      <p className="text-xs text-slate-500 truncate">
+                      <p className="truncate text-[12px] text-tertiary">
                         {e.originalText}
                       </p>
-                      <p className="text-xs text-slate-300 truncate">
+                      <p className="truncate text-[12px] text-primary">
                         {e.translatedText}
                       </p>
                     </motion.div>

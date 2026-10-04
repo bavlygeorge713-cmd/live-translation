@@ -91,6 +91,7 @@ html:has(.rd-page) ::-webkit-scrollbar-thumb { background: rgba(100,116,139,.28)
 html:has(.rd-page) ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,.45); }
 .rd-page button { -webkit-tap-highlight-color: transparent; }
 .rd-page select option { background: #FFFFFF; color: #0F172A; }
+.rd-page input[type="range"] { background: var(--border); }
 .rd-page.canvas-dark select option { background: #080D14; color: #F8FAFC; }
 
 .surface { background: var(--surface); }

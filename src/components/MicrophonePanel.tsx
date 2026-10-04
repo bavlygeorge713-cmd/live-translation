@@ -15,6 +15,11 @@ import { useStore } from "@/store/translationStore";
 import { AudioVisualizer } from "@/components/AudioVisualizer";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
+import {
+  fieldLabelClass,
+  selectClass,
+  SelectChevron,
+} from "@/components/ui/redesign";
 import { LANGUAGES } from "@/types";
 import {
   createWordPacer,
@@ -900,27 +905,31 @@ export function MicrophonePanel({
     <GlassCard glow="blue" className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-200">Microphone</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h2 className="text-[14px] font-semibold text-primary">Microphone</h2>
+          <p className="mt-1 text-[11px] text-tertiary">
             Live · {engine === "whisper" ? "Groq Whisper" : "Web Speech API"}
           </p>
         </div>
-        <div className="size-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-          <Mic className="size-4 text-blue-400" />
+        <div
+          className={`grid size-10 place-items-center rounded-xl ${
+            isRecording
+              ? "bg-brand-50 text-brand-600"
+              : "bg-[var(--surface-2)] text-tertiary"
+          }`}
+        >
+          <Mic className="size-[18px]" />
         </div>
       </div>
 
       {/* Device selector */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">
-            Audio Input
-          </label>
+          <label className={fieldLabelClass}>Audio input</label>
           <button
             onClick={refreshDevices}
-            className="text-slate-600 hover:text-slate-400 transition-colors"
+            className="focus-ring rounded-md p-1 text-tertiary transition-colors hover:bg-[var(--surface-2)] hover:text-primary"
           >
-            <RefreshCw className="size-3" />
+            <RefreshCw className="size-3.5" />
           </button>
         </div>
         <div className="relative">
@@ -928,99 +937,87 @@ export function MicrophonePanel({
             value={selectedDeviceId}
             onChange={(e) => setSelectedDeviceId(e.target.value)}
             disabled={isRecording}
-            className="w-full appearance-none bg-white/5 border border-white/10 text-slate-300
-              text-xs rounded-lg px-3 py-2 pr-7 outline-none cursor-pointer
-              disabled:opacity-40 disabled:cursor-not-allowed focus:border-blue-500/40 transition-colors"
+            className={selectClass}
           >
-            <option value="" className="bg-[#111114]">
-              Default microphone
-            </option>
+            <option value="">Default microphone</option>
             {devices.map((d) => (
-              <option
-                key={d.deviceId}
-                value={d.deviceId}
-                className="bg-[#111114]"
-              >
+              <option key={d.deviceId} value={d.deviceId}>
                 {d.label || `Microphone ${d.deviceId.slice(0, 6)}`}
               </option>
             ))}
           </select>
-          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-xs">
-            ▾
-          </span>
+          <SelectChevron />
         </div>
       </div>
 
       {/* Speaking language selector */}
-      <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-widest text-slate-400 font-medium">
-          Speaking Language:
-        </label>
+      <div className="space-y-2">
+        <label className={fieldLabelClass}>Speaking language</label>
         <div className="relative">
           <select
             value={selectedSrcLang}
             onChange={(e) => handleSrcLangChange(e.target.value)}
-            className="w-full appearance-none bg-white/[0.08] border border-white/20 text-slate-200
-              text-xs rounded-lg px-3 py-2 pr-7 outline-none cursor-pointer
-              focus:border-blue-500/50 transition-colors"
+            className={selectClass}
           >
             {SRC_LANGUAGES.map((l) => (
-              <option key={l.bcp47} value={l.bcp47} className="bg-[#111114]">
+              <option key={l.bcp47} value={l.bcp47}>
                 {l.name}
               </option>
             ))}
           </select>
-          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs">
-            ▾
-          </span>
+          <SelectChevron />
         </div>
       </div>
 
       {/* Recognition engine toggle */}
-      <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">
-          Recognition
-        </label>
-        <div className="grid grid-cols-2 gap-1.5">
+      <div className="space-y-2">
+        <label className={fieldLabelClass}>Recognition</label>
+        <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => handleEngineChange("whisper")}
             disabled={isRecording}
-            className={`text-xs rounded-lg px-3 py-2 border transition-colors
-              disabled:opacity-40 disabled:cursor-not-allowed ${
+            className={`focus-ring rounded-[10px] border px-3 py-2.5 text-[12px] font-semibold transition-colors
+              disabled:cursor-not-allowed disabled:opacity-50 ${
                 engine === "whisper"
-                  ? "bg-blue-500/15 border-blue-500/40 text-blue-300"
-                  : "bg-white/5 border-white/10 text-slate-400 hover:border-white/20"
+                  ? "border-brand-200 bg-brand-50 text-brand-700"
+                  : "border-app bg-[var(--surface)] text-secondary hover:border-[var(--border-strong)]"
               }`}
           >
-            Whisper <span className="text-[10px] opacity-70">(accurate)</span>
+            Whisper{" "}
+            <span className="text-[10px] font-medium opacity-70">
+              (accurate)
+            </span>
           </button>
           <button
             onClick={() => handleEngineChange("browser")}
             disabled={isRecording}
-            className={`text-xs rounded-lg px-3 py-2 border transition-colors
-              disabled:opacity-40 disabled:cursor-not-allowed ${
+            className={`focus-ring rounded-[10px] border px-3 py-2.5 text-[12px] font-semibold transition-colors
+              disabled:cursor-not-allowed disabled:opacity-50 ${
                 engine === "browser"
-                  ? "bg-blue-500/15 border-blue-500/40 text-blue-300"
-                  : "bg-white/5 border-white/10 text-slate-400 hover:border-white/20"
+                  ? "border-brand-200 bg-brand-50 text-brand-700"
+                  : "border-app bg-[var(--surface)] text-secondary hover:border-[var(--border-strong)]"
               }`}
           >
-            Browser <span className="text-[10px] opacity-70">(instant)</span>
+            Browser{" "}
+            <span className="text-[10px] font-medium opacity-70">
+              (instant)
+            </span>
           </button>
         </div>
       </div>
 
       {/* Engine fallback notice */}
       {engineNotice && (
-        <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
-          <AlertCircle className="size-3.5 text-amber-400 mt-0.5 shrink-0" />
-          <p className="text-xs text-amber-300">{engineNotice}</p>
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+          <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
+          <p className="text-[12px] text-amber-800">{engineNotice}</p>
         </div>
       )}
 
       {/* Translation quality indicator */}
       <div className="flex items-center gap-1.5">
-        <span className="text-[10px] text-slate-600">Quality:</span>
-        <span className="text-[10px] font-medium text-emerald-600">
+        <span className="text-[11px] text-tertiary">Quality:</span>
+        <span className="text-[11px] font-semibold text-emerald-700">
           GTX primary · Groq fallback
         </span>
       </div>
@@ -1035,7 +1032,7 @@ export function MicrophonePanel({
 
       {/* Visualizer */}
       {visualStream && (
-        <div className="h-10 flex items-center justify-center">
+        <div className="flex h-12 items-center justify-center rounded-xl bg-[var(--surface-2)]">
           <AudioVisualizer
             stream={visualStream}
             isActive={isRecording}
@@ -1048,16 +1045,16 @@ export function MicrophonePanel({
 
       {/* Error */}
       {error && (
-        <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5">
-          <AlertCircle className="size-3.5 text-red-400 mt-0.5 shrink-0" />
-          <p className="text-xs text-red-300">{error}</p>
+        <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
+          <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-rose-600" />
+          <p className="text-[12px] text-rose-700">{error}</p>
         </div>
       )}
 
       {/* Speaking indicator */}
       {store.isPlaying && !hostMuted && (
         <div className="flex items-center gap-2 px-1">
-          <div className="flex-1 flex items-center gap-1.5 text-xs text-emerald-400">
+          <div className="flex flex-1 items-center gap-1.5 text-[12px] font-medium text-emerald-700">
             <Volume2 className="size-3.5 animate-pulse" /> Speaking…
           </div>
           <Button variant="ghost" size="sm" onClick={stopHostTts}>
@@ -1075,8 +1072,8 @@ export function MicrophonePanel({
           title={hostMuted ? "Unmute host audio" : "Mute host audio"}
           className={`shrink-0 border transition-colors ${
             hostMuted
-              ? "border-slate-600 text-slate-500 hover:border-slate-500 hover:text-slate-400"
-              : "border-blue-500/30 text-blue-400 hover:border-blue-500/50 hover:text-blue-300"
+              ? "border-app text-tertiary hover:border-[var(--border-strong)] hover:text-secondary"
+              : "border-brand-200 bg-brand-50 text-brand-600 hover:border-brand-300 hover:text-brand-700"
           }`}
         >
           {hostMuted ? (
@@ -1090,7 +1087,7 @@ export function MicrophonePanel({
           variant={isRecording ? "danger" : "primary"}
           size="lg"
           onClick={toggle}
-          className="flex-1"
+          className="flex-1 whitespace-nowrap !px-3 !text-[13px]"
         >
           {isRecording ? (
             <>
@@ -1105,7 +1102,7 @@ export function MicrophonePanel({
       </div>
 
       {isRecording && (
-        <p className="text-[10px] text-center text-slate-600">
+        <p className="text-center text-[11px] text-tertiary">
           {hostMuted
             ? "Translating — host audio muted"
             : "Speaking — translating live as you talk"}
@@ -1134,13 +1131,11 @@ function VoiceSelector({
   const otherVoices = tts.voices.filter((v) => !langVoices.includes(v));
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <label className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">
-          AI Voice
-        </label>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <label className={fieldLabelClass}>AI voice</label>
         {langVoices.length > 0 && (
-          <span className="text-[10px] text-slate-700">
+          <span className="truncate text-[10px] text-tertiary">
             {langVoices.length} voice{langVoices.length !== 1 ? "s" : ""} for{" "}
             {tgtInfo?.name}
           </span>
@@ -1148,29 +1143,21 @@ function VoiceSelector({
       </div>
 
       {tts.voices.length === 0 ? (
-        <p className="text-[11px] text-slate-600 py-1">
-          Loading system voices…
-        </p>
+        <p className="py-1 text-[11px] text-tertiary">Loading system voices…</p>
       ) : (
         <div className="relative">
           <select
             value={selectedVoiceURI}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full appearance-none bg-white/5 border border-white/10 text-slate-300
-              text-xs rounded-lg px-3 py-2 pr-7 outline-none cursor-pointer
-              focus:border-blue-500/40 transition-colors"
+            className={selectClass}
           >
-            <option value="" className="bg-[#111114]">
+            <option value="">
               Auto — best match for {tgtInfo?.name ?? "target language"}
             </option>
             {langVoices.length > 0 && (
               <optgroup label={`── ${tgtInfo?.name ?? "Target"} voices`}>
                 {langVoices.map((v) => (
-                  <option
-                    key={v.voiceURI}
-                    value={v.voiceURI}
-                    className="bg-[#111114]"
-                  >
+                  <option key={v.voiceURI} value={v.voiceURI}>
                     {v.name}
                     {v.localService ? " · Local" : " · Online"}
                   </option>
@@ -1180,20 +1167,14 @@ function VoiceSelector({
             {otherVoices.length > 0 && (
               <optgroup label="── Other voices">
                 {otherVoices.map((v) => (
-                  <option
-                    key={v.voiceURI}
-                    value={v.voiceURI}
-                    className="bg-[#111114]"
-                  >
+                  <option key={v.voiceURI} value={v.voiceURI}>
                     {v.name} ({v.lang})
                   </option>
                 ))}
               </optgroup>
             )}
           </select>
-          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-xs">
-            ▾
-          </span>
+          <SelectChevron />
         </div>
       )}
     </div>

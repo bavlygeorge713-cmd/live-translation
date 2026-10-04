@@ -14,6 +14,7 @@ import {
 import QRCode from "qrcode";
 import { useNetworkInfo } from "@/hooks/useNetworkInfo";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { selectClass, SelectChevron } from "@/components/ui/redesign";
 
 interface Props {
   connected: boolean;
@@ -40,7 +41,7 @@ export function QRSharePanel({ connected, viewerCount }: Props) {
     QRCode.toDataURL(selectedUrl, {
       width: 200,
       margin: 2,
-      color: { dark: "#e2e8f0", light: "#0f0f1a" },
+      color: { dark: "#0f172a", light: "#ffffff" },
     })
       .then(setQrDataUrl)
       .catch(() => {});
@@ -84,27 +85,27 @@ export function QRSharePanel({ connected, viewerCount }: Props) {
     <GlassCard glow="purple" className="flex flex-col gap-3">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="flex items-center justify-between w-full text-left"
+        className="flex w-full items-center justify-between gap-2 text-left"
       >
-        <div className="flex items-center gap-2.5">
-          <div className="size-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
-            <QrCode className="size-4 text-violet-400" />
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--surface-2)] text-tertiary">
+            <QrCode className="size-4" />
           </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-200">
+          <div className="min-w-0">
+            <p className="text-[14px] font-semibold text-primary">
               Share to Devices
             </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            <p className="mt-0.5 text-[11px] text-tertiary">
               Scan QR to view live translations
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <div
-            className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${
+            className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide ring-1 ${
               connected
-                ? "bg-emerald-500/10 text-emerald-400"
-                : "bg-slate-500/10 text-slate-500"
+                ? "bg-emerald-50 text-emerald-700 ring-emerald-200/80"
+                : "bg-slate-100 text-slate-500 ring-slate-200"
             }`}
           >
             {connected ? (
@@ -120,15 +121,15 @@ export function QRSharePanel({ connected, viewerCount }: Props) {
             )}
           </div>
           {connected && viewerCount > 0 && (
-            <div className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400">
+            <div className="flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-[10px] font-bold text-brand-700 ring-1 ring-brand-200">
               <Users className="size-2.5" />
               <span>{viewerCount}</span>
             </div>
           )}
           {expanded ? (
-            <ChevronUp className="size-4 text-slate-500" />
+            <ChevronUp className="size-4 text-tertiary" />
           ) : (
-            <ChevronDown className="size-4 text-slate-500" />
+            <ChevronDown className="size-4 text-tertiary" />
           )}
         </div>
       </button>
@@ -148,61 +149,57 @@ export function QRSharePanel({ connected, viewerCount }: Props) {
                   <select
                     value={selectedUrl}
                     onChange={(e) => setSelectedUrl(e.target.value)}
-                    className="w-full appearance-none bg-white/5 border border-white/10 text-slate-300
-                      text-xs rounded-lg px-3 py-2 pr-7 outline-none cursor-pointer"
+                    className={selectClass}
                   >
                     {viewerUrls.map((u) => (
-                      <option key={u} value={u} className="bg-[#111114]">
+                      <option key={u} value={u}>
                         {u}
                       </option>
                     ))}
                   </select>
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-xs">
-                    ▾
-                  </span>
+                  <SelectChevron />
                 </div>
               )}
 
               {qrDataUrl && (
-                <div className="flex flex-col items-center gap-2">
-                  <div className="rounded-2xl overflow-hidden border border-white/10 p-2 bg-[#0f0f1a]">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
                     <img
                       ref={qrImgRef}
                       src={qrDataUrl}
                       alt="Viewer QR code"
-                      className="w-40 h-40"
+                      className="h-40 w-40"
                     />
                   </div>
                   <button
                     onClick={downloadQr}
-                    className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-violet-400
-                      bg-white/5 hover:bg-violet-500/10 border border-white/10 hover:border-violet-500/30
-                      rounded-lg px-3 py-1.5 transition-all"
+                    className="focus-ring flex h-9 items-center gap-1.5 rounded-[10px] border border-app bg-[var(--surface)] px-3 text-[13px] font-semibold
+                      text-primary transition-colors hover:bg-[var(--surface-2)]"
                   >
-                    <Download className="size-3" />
+                    <Download className="size-3.5" />
                     Download QR
                   </button>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 border border-white/10">
-                <p className="text-[10px] text-slate-400 flex-1 truncate font-mono">
+              <div className="flex items-center gap-2 rounded-xl bg-[var(--surface-2)] px-3 py-2.5">
+                <p className="flex-1 truncate font-mono text-[11px] text-secondary">
                   {selectedUrl}
                 </p>
                 <button
                   onClick={copyUrl}
-                  className="text-slate-500 hover:text-violet-400 transition-colors shrink-0"
+                  className="shrink-0 text-tertiary transition-colors hover:text-brand-600"
                   title="Copy URL"
                 >
                   {copied ? (
-                    <Check className="size-3.5 text-emerald-400" />
+                    <Check className="size-3.5 text-emerald-600" />
                   ) : (
                     <Copy className="size-3.5" />
                   )}
                 </button>
               </div>
 
-              <p className="text-[10px] text-slate-600 text-center">
+              <p className="text-center text-[11px] text-tertiary">
                 Other devices on the same Wi-Fi can scan this to see live
                 translations
               </p>

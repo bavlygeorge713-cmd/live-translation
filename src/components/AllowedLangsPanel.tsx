@@ -76,19 +76,19 @@ export function AllowedLangsPanel({ send, viewerCount }: Props) {
 
   return (
     <GlassCard glow="purple" className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-semibold text-slate-200">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-[14px] font-semibold text-primary">
             Viewer Languages
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="mt-0.5 text-[11px] text-tertiary">
             {allowedLangs.length > 0
               ? `${allowedLangs.length} of ${maxCount} selected`
               : "No languages — viewers see Follow Host only"}
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-slate-600">Max:</span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="text-[11px] font-medium text-tertiary">Max:</span>
           <input
             type="number"
             min={1}
@@ -98,12 +98,12 @@ export function AllowedLangsPanel({ send, viewerCount }: Props) {
               const v = parseInt(e.target.value, 10);
               if (!isNaN(v)) handleMaxChange(v);
             }}
-            className="w-10 bg-white/5 border border-white/10 text-slate-300 text-xs rounded px-1.5 py-1 outline-none focus:border-violet-500/40 text-center"
+            className="focus-ring h-8 w-12 rounded-lg border border-app bg-[var(--surface)] px-1.5 text-center text-[12px] font-medium text-primary outline-none"
           />
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-0.5">
+      <div className="thin-scrollbar flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-0.5">
         {supportedLangs.map((l) => {
           const isSelected = allowedLangs.includes(l.code);
           const isDisabled = !isSelected && allowedLangs.length >= maxCount;
@@ -112,12 +112,12 @@ export function AllowedLangsPanel({ send, viewerCount }: Props) {
               key={l.code}
               onClick={() => !isDisabled && toggleLang(l.code)}
               title={isDisabled ? `Max ${maxCount} languages reached` : l.name}
-              className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-full border transition-colors select-none ${
+              className={`flex select-none items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors ${
                 isSelected
-                  ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
+                  ? "border-brand-200 bg-brand-50 text-brand-700"
                   : isDisabled
-                    ? "bg-white/[0.02] border-white/5 text-slate-700 cursor-not-allowed"
-                    : "bg-white/5 border-white/10 text-slate-400 hover:border-white/20 cursor-pointer"
+                    ? "cursor-not-allowed border-app bg-[var(--surface-2)] text-[var(--muted)]"
+                    : "cursor-pointer border-app bg-[var(--surface)] text-secondary hover:border-[var(--border-strong)]"
               }`}
             >
               <span>{l.flag}</span>

@@ -2,17 +2,17 @@ import { ReactNode } from "react";
 import { clsx } from "clsx";
 
 const V = {
-  blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  purple: "bg-violet-500/10 text-violet-400 border-violet-500/20",
-  emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  red: "bg-red-500/10 text-red-400 border-red-500/20",
-  slate: "bg-slate-500/10 text-slate-400 border-slate-500/20",
+  blue: "bg-brand-50 text-brand-700 border-brand-200",
+  purple: "bg-signal-50 text-signal-700 border-signal-100",
+  emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  red: "bg-rose-50 text-rose-700 border-rose-200",
+  slate: "bg-slate-100 text-slate-600 border-slate-200",
 };
 const DOT = {
-  blue: "bg-blue-400",
-  purple: "bg-violet-400",
-  emerald: "bg-emerald-400",
-  red: "bg-red-400",
+  blue: "bg-brand-500",
+  purple: "bg-signal-500",
+  emerald: "bg-emerald-500",
+  red: "bg-rose-500",
   slate: "bg-slate-400",
 };
 
