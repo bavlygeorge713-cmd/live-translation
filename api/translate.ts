@@ -28,6 +28,16 @@ const LANG_NAMES: Record<string, string> = {
   zh: "Chinese",
   ko: "Korean",
   tr: "Turkish",
+  hi: "Hindi",
+  ta: "Tamil",
+  te: "Telugu",
+  bn: "Bengali",
+  mr: "Marathi",
+  gu: "Gujarati",
+  kn: "Kannada",
+  ml: "Malayalam",
+  pa: "Punjabi (Gurmukhi script)",
+  ur: "Urdu",
 };
 
 async function callGroq(
