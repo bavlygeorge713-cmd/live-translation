@@ -38,15 +38,17 @@ export function TextVoiceOver({ translate }: Props) {
 
   return (
     <GlassCard glow="purple" className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <div className="size-7 rounded-lg bg-violet-500/10 flex items-center justify-center">
-          <FileText className="size-3.5 text-violet-400" />
+      <div className="flex items-center gap-3">
+        <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--surface-2)] text-tertiary">
+          <FileText className="size-4" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-slate-200">
+          <h3 className="text-[14px] font-semibold text-primary">
             Text Translator
           </h3>
-          <p className="text-xs text-slate-500">Type text, translate, speak</p>
+          <p className="mt-0.5 text-[11px] text-tertiary">
+            Type text, translate, speak
+          </p>
         </div>
       </div>
 
@@ -55,9 +57,9 @@ export function TextVoiceOver({ translate }: Props) {
         onChange={(e) => setInput(e.target.value)}
         placeholder="Type or paste text to translate…"
         rows={3}
-        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm
-          text-slate-200 placeholder-slate-600 resize-none outline-none
-          focus:border-violet-500/40 transition-colors"
+        className="focus-ring w-full resize-none rounded-[10px] border border-app bg-[var(--surface)] px-3.5 py-3 text-[13px]
+          text-primary outline-none transition placeholder:text-[var(--muted)]
+          hover:border-[var(--border-strong)]"
       />
 
       <Button
@@ -72,8 +74,8 @@ export function TextVoiceOver({ translate }: Props) {
       </Button>
 
       {error && (
-        <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5">
-          <p className="text-xs text-red-300">{error}</p>
+        <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
+          <p className="text-[12px] text-rose-700">{error}</p>
         </div>
       )}
 
@@ -85,8 +87,10 @@ export function TextVoiceOver({ translate }: Props) {
             exit={{ opacity: 0, height: 0 }}
             className="space-y-3"
           >
-            <div className="bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-3">
-              <p className="text-xs text-slate-200 leading-relaxed">{output}</p>
+            <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
+              <p className="text-[13px] leading-relaxed text-primary">
+                {output}
+              </p>
             </div>
             <div className="flex gap-2">
               <Button

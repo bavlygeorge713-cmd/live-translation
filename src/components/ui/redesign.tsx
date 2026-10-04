@@ -1,7 +1,7 @@
 // Shared presentational primitives for the redesigned pages
 // (login, rooms, viewer). Styling only — no app logic lives here.
 import { forwardRef, useState } from "react";
-import { Captions, Eye, EyeOff } from "lucide-react";
+import { Captions, ChevronDown, Eye, EyeOff } from "lucide-react";
 
 export function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -116,3 +116,23 @@ export const RField = forwardRef<HTMLInputElement, FieldProps>(function RField(
     </label>
   );
 });
+
+export const fieldLabelClass = "block text-[12px] font-semibold text-secondary";
+
+export const selectClass =
+  "focus-ring h-11 w-full cursor-pointer appearance-none rounded-[10px] border border-app bg-[var(--surface)] pl-3 pr-9 text-[13px] font-medium text-primary outline-none transition hover:border-[var(--border-strong)] disabled:cursor-not-allowed disabled:opacity-50";
+
+/** Chevron for a native <select>; place inside a `relative` wrapper. */
+export function SelectChevron() {
+  return (
+    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-tertiary" />
+  );
+}
+
+export function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-tertiary">
+      {children}
+    </div>
+  );
+}

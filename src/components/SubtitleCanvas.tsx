@@ -70,14 +70,18 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
     };
 
     // Theme-derived colors
-    const bg = isDark ? "#000000" : "#fafafa";
-    const textPrimary = isDark ? "#ffffff" : "#111111";
-    const textEmpty = isDark ? "rgba(100,116,139,0.4)" : "rgba(71,85,105,0.55)";
-    const footerBorder = isDark ? "#222222" : "#e2e8f0";
-    const footerText = isDark ? "#888888" : "#555555";
-    const btnBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
-    const btnBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.12)";
-    const btnColor = isDark ? "#94a3b8" : "#475569";
+    const bg = isDark ? "#080D14" : "#FBFCFE";
+    const textPrimary = isDark ? "#F8FAFC" : "#101828";
+    const textPrev = isDark ? "#CBD5E1" : "#344054";
+    const textOld = isDark ? "#8A99AC" : "#667085";
+    const textEmpty = isDark ? "#718096" : "#667085";
+    const footerBorder = isDark ? "#202C3A" : "#E4E7EC";
+    const footerText = isDark ? "#718096" : "#667085";
+    const speakingBg = isDark ? "rgba(59,130,246,0.12)" : "#EFF6FF";
+    const speakingEdge = isDark ? "#60A5FA" : "#2563EB";
+    const btnBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+    const btnBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+    const btnColor = isDark ? "#718096" : "#667085";
     const colorTransition =
       "background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease";
 
@@ -140,8 +144,9 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
           ref={liveDivRef}
           style={{
             width: "100%",
-            height: "400px",
-            borderRadius: "12px",
+            height: "460px",
+            borderRadius: "20px",
+            border: `1px solid ${footerBorder}`,
             overflow: "hidden",
             backgroundColor: bg,
             display: "flex",
@@ -154,9 +159,11 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "8px",
-              padding: "14px 20px 10px 20px",
+              gap: "10px",
+              padding: "14px 20px",
+              borderBottom: `1px solid ${footerBorder}`,
               flexShrink: 0,
+              transition: colorTransition,
             }}
           >
             <span
@@ -164,8 +171,6 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
                 fontSize: "12px",
                 fontWeight: 600,
                 color: textPrimary,
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
                 transition: colorTransition,
               }}
             >
@@ -258,9 +263,9 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: "26px",
-                height: "26px",
-                borderRadius: "6px",
+                width: "32px",
+                height: "32px",
+                borderRadius: "8px",
                 border: `1px solid ${btnBorder}`,
                 backgroundColor: btnBg,
                 cursor: "pointer",
@@ -270,7 +275,7 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
                 padding: 0,
               }}
             >
-              {isDark ? <Sun size={13} /> : <Moon size={13} />}
+              {isDark ? <Sun size={15} /> : <Moon size={15} />}
             </button>
           </div>
 
@@ -280,10 +285,11 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
             style={{
               flex: 1,
               overflowY: "auto",
-              padding: "4px 20px 12px 20px",
+              padding: "24px 24px 20px 24px",
               display: "flex",
               flexDirection: "column",
-              gap: "14px",
+              gap: "18px",
+              fontFamily: '"Noto Sans", "Noto Sans Arabic", sans-serif',
             }}
           >
             {sentences.length === 0 && (
@@ -299,8 +305,11 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
               </p>
             )}
 
-            {sentences.map((entry) => {
+            {sentences.map((entry, idx) => {
               const showCursor = !entry.frozen && entry.text.length > 0;
+              // Style only: newest line sits in a highlighted card, older lines fade
+              const isCurrent = idx === sentences.length - 1;
+              const isPrev = idx === sentences.length - 2;
               return (
                 <motion.p
                   key={entry.id}
@@ -309,10 +318,23 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
                   transition={{ duration: 0.15 }}
                   style={{
                     fontSize: "28px",
-                    color: textPrimary,
+                    fontWeight: 500,
+                    color: isCurrent
+                      ? textPrimary
+                      : isPrev
+                        ? textPrev
+                        : textOld,
                     lineHeight: "1.5",
                     margin: 0,
                     transition: colorTransition,
+                    ...(isCurrent
+                      ? {
+                          backgroundColor: speakingBg,
+                          borderLeft: `3px solid ${speakingEdge}`,
+                          borderRadius: "12px",
+                          padding: "12px 16px",
+                        }
+                      : {}),
                   }}
                 >
                   {entry.text}
@@ -339,10 +361,10 @@ export const SubtitleCanvas = forwardRef<CanvasHandle, SubtitleCanvasProps>(
           <div
             style={{
               flexShrink: 0,
-              padding: "8px 16px",
+              padding: "10px 20px",
               borderTop: `1px solid ${footerBorder}`,
               color: footerText,
-              fontSize: "14px",
+              fontSize: "13px",
               lineHeight: "1.4",
               minHeight: "36px",
               transition: colorTransition,
