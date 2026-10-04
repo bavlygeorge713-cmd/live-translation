@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Globe } from "lucide-react";
+import { AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
+import { LogoMark, RButton, RField } from "@/components/ui/redesign";
 import { AuthContext } from "@/contexts/AuthContext";
 
 type AuthState = "checking" | "authenticated" | "unauthenticated";
@@ -72,12 +73,12 @@ export function HostAuthGate({ children }: Props) {
 
   if (authState === "checking") {
     return (
-      <div className="h-screen bg-[#08080f] flex items-center justify-center">
+      <div className="rd-page flex h-screen items-center justify-center bg-[#F4F7FB]">
         <div className="flex gap-2">
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="size-2.5 rounded-full bg-blue-500/40"
+              className="size-2.5 rounded-full bg-brand-500/50"
               animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.25 }}
             />
@@ -89,64 +90,82 @@ export function HostAuthGate({ children }: Props) {
 
   if (authState === "unauthenticated") {
     return (
-      <div className="h-screen bg-[#08080f] flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-sm"
-        >
-          <div className="mb-8 flex flex-col items-center gap-3">
-            <div className="size-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-violet-500/20 flex items-center justify-center border border-white/10">
-              <Globe className="size-6 text-blue-400" />
+      <div className="rd-page relative min-h-screen overflow-hidden bg-[#F4F7FB] px-5 py-8 text-slate-900">
+        <div className="pointer-events-none absolute left-1/2 top-[-220px] size-[520px] -translate-x-1/2 rounded-full bg-brand-100/70 blur-3xl" />
+        <div className="relative mx-auto flex min-h-[calc(100vh-64px)] max-w-[1120px] items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-[420px] rounded-[22px] border border-slate-200 bg-white p-7 shadow-[0_20px_60px_rgba(15,23,42,.08)] sm:p-8"
+          >
+            <div className="mb-8 flex justify-center">
+              <LogoMark />
             </div>
-            <h1 className="text-white text-xl font-semibold">Host Access</h1>
-            <p className="text-slate-500 text-sm text-center">
-              Sign in to manage your conference room
-            </p>
-          </div>
+            <div className="mb-7 text-center">
+              <h1 className="text-[25px] font-semibold tracking-[-0.035em] text-slate-950">
+                Welcome back
+              </h1>
+              <p className="mt-2 text-[13px] leading-5 text-slate-500">
+                Sign in to the host console to manage your live conference
+                translation.
+              </p>
+            </div>
 
-          <form onSubmit={handleLogin} className="flex flex-col gap-3">
-            <input
-              ref={usernameRef}
-              type="text"
-              autoComplete="username"
-              placeholder="Username"
-              required
-              onChange={clearError}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white
-                placeholder-slate-600 text-sm outline-none focus:border-blue-500/50 transition-colors"
-            />
-            <input
-              ref={passwordRef}
-              type="password"
-              autoComplete="current-password"
-              placeholder="Password"
-              required
-              onChange={clearError}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white
-                placeholder-slate-600 text-sm outline-none focus:border-blue-500/50 transition-colors"
-            />
+            <form onSubmit={handleLogin} className="space-y-4">
+              <RField
+                ref={usernameRef}
+                label="Username"
+                type="text"
+                autoComplete="username"
+                placeholder="Enter your username"
+                required
+                onChange={clearError}
+              />
+              <RField
+                ref={passwordRef}
+                label="Password"
+                type="password"
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                required
+                onChange={clearError}
+              />
 
-            {loginError && (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-red-400 text-xs px-1 leading-relaxed"
+              {loginError && (
+                <motion.p
+                  role="alert"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-start gap-2 rounded-[10px] border border-rose-200 bg-rose-50 px-3 py-2.5 text-[12px] leading-5 text-rose-700"
+                >
+                  <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+                  {loginError}
+                </motion.p>
+              )}
+
+              <RButton
+                type="submit"
+                variant="primary"
+                size="lg"
+                disabled={loggingIn}
+                className="mt-2 w-full"
               >
-                {loginError}
-              </motion.p>
-            )}
+                {loggingIn ? (
+                  "Signing in…"
+                ) : (
+                  <>
+                    Sign in <ArrowRight className="size-4" />
+                  </>
+                )}
+              </RButton>
+            </form>
 
-            <button
-              type="submit"
-              disabled={loggingIn}
-              className="mt-1 w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed
-                text-white font-medium rounded-xl py-3 text-sm transition-colors"
-            >
-              {loggingIn ? "Logging in…" : "Log in"}
-            </button>
-          </form>
-        </motion.div>
+            <div className="mt-7 flex items-center justify-center gap-2 text-[11px] font-medium text-slate-400">
+              <ShieldCheck className="size-3.5" /> Secure conference translation
+              platform
+            </div>
+          </motion.div>
+        </div>
       </div>
     );
   }
