@@ -18,11 +18,34 @@ interface AppProps {
   roomId: string;
 }
 
+// Host shell theme (visual only) — defaults to dark
+const HOST_THEME_KEY = "ct_host_theme";
+type HostTheme = "dark" | "light";
+function readHostTheme(): HostTheme {
+  try {
+    return localStorage.getItem(HOST_THEME_KEY) === "light" ? "light" : "dark";
+  } catch {
+    return "dark";
+  }
+}
+
 export default function App({ roomId }: AppProps) {
   const canvasRef = useRef<CanvasHandle>(null);
   const [micStream, setMicStream] = useState<MediaStream | null>(null);
   const [recIsRecording, setRecIsRecording] = useState(false);
   const [recDuration, setRecDuration] = useState(0);
+  const [theme, setTheme] = useState<HostTheme>(readHostTheme);
+  const isDark = theme === "dark";
+
+  const toggleTheme = () => {
+    const next: HostTheme = isDark ? "light" : "dark";
+    setTheme(next);
+    try {
+      localStorage.setItem(HOST_THEME_KEY, next);
+    } catch {
+      /* storage unavailable — theme just won't persist */
+    }
+  };
 
   const { translate } = useOnlineTranslation(roomId);
   const { connected, viewerCount, send, requestedLangs, publishToLang } =
@@ -31,8 +54,10 @@ export default function App({ roomId }: AppProps) {
   const roomName = roomId ? roomIdToDisplayName(roomId) : undefined;
 
   return (
-    <div className="rd-page flex min-h-screen flex-col bg-[var(--app)] text-primary">
-      <Header roomName={roomName} />
+    <div
+      className={`rd-page ${isDark ? "dark dark-shell host-dark" : ""} flex min-h-screen flex-col bg-[var(--app)] text-primary`}
+    >
+      <Header roomName={roomName} isDark={isDark} onToggleTheme={toggleTheme} />
 
       <main className="mx-auto w-full max-w-[1900px] flex-1 p-4 xl:p-5 2xl:p-6">
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_320px] xl:gap-5">
@@ -59,11 +84,11 @@ export default function App({ roomId }: AppProps) {
                   </div>
                 </div>
                 {connected ? (
-                  <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200/80">
+                  <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200/80 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/30">
                     Live
                   </span>
                 ) : (
-                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500 ring-1 ring-slate-200">
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500 ring-1 ring-slate-200 dark:bg-slate-700/40 dark:text-slate-300 dark:ring-slate-600">
                     Offline
                   </span>
                 )}

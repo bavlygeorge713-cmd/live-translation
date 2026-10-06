@@ -76,9 +76,9 @@ export function ExportSidebar({
 
         {/* Timer */}
         {isRecording && (
-          <div className="mb-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2">
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 dark:border-rose-400/30 dark:bg-rose-500/10">
             <span className="size-2 rounded-full bg-rose-500 animate-[recordPulse_1.5s_ease-in-out_infinite]" />
-            <span className="font-mono text-[12px] font-semibold text-rose-700">
+            <span className="font-mono text-[12px] font-semibold text-rose-700 dark:text-rose-200">
               {fmt(duration)}
             </span>
             <span className="text-[12px] text-secondary">Recording…</span>
@@ -108,7 +108,7 @@ export function ExportSidebar({
         </div>
 
         {recError && (
-          <p className="mt-2 text-[12px] text-rose-700">{recError}</p>
+          <p className="mt-2 text-[12px] text-rose-700 dark:text-rose-300">{recError}</p>
         )}
 
         {!isRecording && (
@@ -179,7 +179,7 @@ export function ExportSidebar({
                   e.stopPropagation();
                   clearHistory();
                 }}
-                className="rounded-md p-1 text-tertiary transition-colors hover:bg-rose-50 hover:text-rose-600"
+                className="rounded-md p-1 text-tertiary transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
               >
                 <Trash2 className="size-3.5" />
               </button>

@@ -104,8 +104,8 @@ export function QRSharePanel({ connected, viewerCount }: Props) {
           <div
             className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide ring-1 ${
               connected
-                ? "bg-emerald-50 text-emerald-700 ring-emerald-200/80"
-                : "bg-slate-100 text-slate-500 ring-slate-200"
+                ? "bg-emerald-50 text-emerald-700 ring-emerald-200/80 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/30"
+                : "bg-slate-100 text-slate-500 ring-slate-200 dark:bg-slate-700/40 dark:text-slate-300 dark:ring-slate-600"
             }`}
           >
             {connected ? (
@@ -121,7 +121,7 @@ export function QRSharePanel({ connected, viewerCount }: Props) {
             )}
           </div>
           {connected && viewerCount > 0 && (
-            <div className="flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-[10px] font-bold text-brand-700 ring-1 ring-brand-200">
+            <div className="flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-[10px] font-bold text-brand-700 ring-1 ring-brand-200 dark:bg-brand-500/15 dark:text-brand-300 dark:ring-brand-400/30">
               <Users className="size-2.5" />
               <span>{viewerCount}</span>
             </div>
@@ -188,11 +188,11 @@ export function QRSharePanel({ connected, viewerCount }: Props) {
                 </p>
                 <button
                   onClick={copyUrl}
-                  className="shrink-0 text-tertiary transition-colors hover:text-brand-600"
+                  className="shrink-0 text-tertiary transition-colors hover:text-brand-600 dark:hover:text-brand-300"
                   title="Copy URL"
                 >
                   {copied ? (
-                    <Check className="size-3.5 text-emerald-600" />
+                    <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                   ) : (
                     <Copy className="size-3.5" />
                   )}

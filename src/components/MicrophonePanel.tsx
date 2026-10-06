@@ -913,7 +913,7 @@ export function MicrophonePanel({
         <div
           className={`grid size-10 place-items-center rounded-xl ${
             isRecording
-              ? "bg-brand-50 text-brand-600"
+              ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300"
               : "bg-[var(--surface-2)] text-tertiary"
           }`}
         >
@@ -979,7 +979,7 @@ export function MicrophonePanel({
             className={`focus-ring rounded-[10px] border px-3 py-2.5 text-[12px] font-semibold transition-colors
               disabled:cursor-not-allowed disabled:opacity-50 ${
                 engine === "whisper"
-                  ? "border-brand-200 bg-brand-50 text-brand-700"
+                  ? "border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-400/40 dark:bg-brand-500/15 dark:text-brand-200"
                   : "border-app bg-[var(--surface)] text-secondary hover:border-[var(--border-strong)]"
               }`}
           >
@@ -994,7 +994,7 @@ export function MicrophonePanel({
             className={`focus-ring rounded-[10px] border px-3 py-2.5 text-[12px] font-semibold transition-colors
               disabled:cursor-not-allowed disabled:opacity-50 ${
                 engine === "browser"
-                  ? "border-brand-200 bg-brand-50 text-brand-700"
+                  ? "border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-400/40 dark:bg-brand-500/15 dark:text-brand-200"
                   : "border-app bg-[var(--surface)] text-secondary hover:border-[var(--border-strong)]"
               }`}
           >
@@ -1008,16 +1008,16 @@ export function MicrophonePanel({
 
       {/* Engine fallback notice */}
       {engineNotice && (
-        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
-          <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
-          <p className="text-[12px] text-amber-800">{engineNotice}</p>
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-400/30 dark:bg-amber-500/10">
+          <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-300" />
+          <p className="text-[12px] text-amber-800 dark:text-amber-200">{engineNotice}</p>
         </div>
       )}
 
       {/* Translation quality indicator */}
       <div className="flex items-center gap-1.5">
         <span className="text-[11px] text-tertiary">Quality:</span>
-        <span className="text-[11px] font-semibold text-emerald-700">
+        <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
           GTX primary · Groq fallback
         </span>
       </div>
@@ -1045,16 +1045,16 @@ export function MicrophonePanel({
 
       {/* Error */}
       {error && (
-        <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
-          <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-rose-600" />
-          <p className="text-[12px] text-rose-700">{error}</p>
+        <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 dark:border-rose-400/30 dark:bg-rose-500/10">
+          <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-rose-600 dark:text-rose-300" />
+          <p className="text-[12px] text-rose-700 dark:text-rose-200">{error}</p>
         </div>
       )}
 
       {/* Speaking indicator */}
       {store.isPlaying && !hostMuted && (
         <div className="flex items-center gap-2 px-1">
-          <div className="flex flex-1 items-center gap-1.5 text-[12px] font-medium text-emerald-700">
+          <div className="flex flex-1 items-center gap-1.5 text-[12px] font-medium text-emerald-700 dark:text-emerald-300">
             <Volume2 className="size-3.5 animate-pulse" /> Speaking…
           </div>
           <Button variant="ghost" size="sm" onClick={stopHostTts}>
@@ -1073,7 +1073,7 @@ export function MicrophonePanel({
           className={`shrink-0 border transition-colors ${
             hostMuted
               ? "border-app text-tertiary hover:border-[var(--border-strong)] hover:text-secondary"
-              : "border-brand-200 bg-brand-50 text-brand-600 hover:border-brand-300 hover:text-brand-700"
+              : "border-brand-200 bg-brand-50 text-brand-600 hover:border-brand-300 hover:text-brand-700 dark:border-brand-400/40 dark:bg-brand-500/15 dark:text-brand-300 dark:hover:border-brand-300 dark:hover:text-brand-200"
           }`}
         >
           {hostMuted ? (

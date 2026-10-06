@@ -94,6 +94,17 @@ html:has(.rd-page) ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,13
 .rd-page input[type="range"] { background: var(--border); }
 .rd-page.canvas-dark select option { background: #080D14; color: #F8FAFC; }
 
+/* Host console dark mode — the host root adds .dark-shell + .host-dark (+ .dark
+   for Tailwind dark: variants) on top of .rd-page. Nothing else mounts these. */
+html:has(.host-dark),
+body:has(.host-dark) {
+  background: #090F18; /* = .dark-shell --app (vars don't reach <html>) */
+  color: #F8FAFC;
+  color-scheme: dark;
+}
+.host-dark select option { background: #111925; color: #F8FAFC; }
+.host-dark { --muted: #7C8CA3; } /* AA on --surface / --surface-2 for placeholders */
+
 .surface { background: var(--surface); }
 .surface-2 { background: var(--surface-2); }
 .text-primary { color: var(--text); }

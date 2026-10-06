@@ -114,7 +114,7 @@ export function AllowedLangsPanel({ send, viewerCount }: Props) {
               title={isDisabled ? `Max ${maxCount} languages reached` : l.name}
               className={`flex select-none items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors ${
                 isSelected
-                  ? "border-brand-200 bg-brand-50 text-brand-700"
+                  ? "border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-400/40 dark:bg-brand-500/15 dark:text-brand-200"
                   : isDisabled
                     ? "cursor-not-allowed border-app bg-[var(--surface-2)] text-[var(--muted)]"
                     : "cursor-pointer border-app bg-[var(--surface)] text-secondary hover:border-[var(--border-strong)]"

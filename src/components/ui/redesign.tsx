@@ -12,7 +12,7 @@ export function LogoMark({ compact = false }: { compact?: boolean }) {
     <div className="flex items-center gap-3">
       <div className="relative grid size-9 shrink-0 place-items-center rounded-xl bg-brand-600 shadow-sm">
         <Captions className="size-[19px] text-white" strokeWidth={2} />
-        <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-white bg-emerald-400" />
+        <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-white bg-emerald-400 dark:border-[var(--surface)]" />
       </div>
       {!compact && (
         <div className="leading-none">

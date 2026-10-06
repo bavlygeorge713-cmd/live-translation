@@ -74,8 +74,8 @@ export function TextVoiceOver({ translate }: Props) {
       </Button>
 
       {error && (
-        <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5">
-          <p className="text-[12px] text-rose-700">{error}</p>
+        <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 dark:border-rose-400/30 dark:bg-rose-500/10">
+          <p className="text-[12px] text-rose-700 dark:text-rose-200">{error}</p>
         </div>
       )}
 
@@ -87,7 +87,7 @@ export function TextVoiceOver({ translate }: Props) {
             exit={{ opacity: 0, height: 0 }}
             className="space-y-3"
           >
-            <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3">
+            <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 dark:border-brand-400/30 dark:bg-brand-500/10">
               <p className="text-[13px] leading-relaxed text-primary">
                 {output}
               </p>

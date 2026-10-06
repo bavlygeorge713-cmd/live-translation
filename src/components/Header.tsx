@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Globe, LogOut } from "lucide-react";
+import { Globe, LogOut, Moon, Sun } from "lucide-react";
 import { LogoMark, RButton } from "@/components/ui/redesign";
 import { Badge } from "@/components/ui/Badge";
 import { useStore } from "@/store/translationStore";
@@ -7,9 +7,11 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface HeaderProps {
   roomName?: string;
+  isDark: boolean;
+  onToggleTheme: () => void;
 }
 
-export function Header({ roomName }: HeaderProps) {
+export function Header({ roomName, isDark, onToggleTheme }: HeaderProps) {
   const { processingState } = useStore();
   const auth = useAuth();
 
@@ -60,6 +62,21 @@ export function Header({ roomName }: HeaderProps) {
               Web Speech · Online Translation
             </span>
           </div>
+
+          <RButton
+            variant="ghost"
+            size="sm"
+            onClick={onToggleTheme}
+            title={isDark ? "Switch to light theme" : "Switch to dark theme"}
+            aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+            className="w-9 !px-0"
+          >
+            {isDark ? (
+              <Sun className="size-4 shrink-0" />
+            ) : (
+              <Moon className="size-4 shrink-0" />
+            )}
+          </RButton>
 
           {auth && (
             <RButton variant="ghost" onClick={auth.onLogout} title="Log out">

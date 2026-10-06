@@ -15,7 +15,8 @@ const V = {
     "bg-[var(--surface)] border border-app text-primary hover:bg-[var(--surface-2)]",
   danger: "bg-rose-600 text-white hover:bg-rose-700 shadow-sm",
   ghost: "text-secondary hover:text-primary hover:bg-[var(--surface-2)]",
-  success: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm",
+  success:
+    "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm dark:bg-emerald-700 dark:hover:bg-emerald-600",
 };
 const S = {
   sm: "h-9 px-3 text-[13px] gap-1.5 rounded-[10px]",
