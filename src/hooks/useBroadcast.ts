@@ -33,6 +33,22 @@ function sanitizeRoomParam(raw: string | undefined): string {
   return s || "default";
 }
 
+// A config-only attachment of the room channel (server-side subscription filter). A viewer that gets its captions from a
+// language channel uses it to keep receiving the host's config without also receiving every caption on the base channel.
+// Ably does not support rewind on filtered channels; the host re-publishes config whenever a viewer joins.
+async function attachConfigChannel(
+  client: Ably.Realtime,
+  channelName: string,
+  onConfig: (data: BroadcastMessage) => void,
+): Promise<Ably.RealtimeChannel> {
+  const ch = client.channels.getDerived(channelName, {
+    filter: "name == `config`",
+  });
+  ch.subscribe("config", (msg) => onConfig(msg.data as BroadcastMessage));
+  await ch.attach();
+  return ch;
+}
+
 export function useBroadcast(
   role: Role,
   onMessage?: (msg: BroadcastMessage) => void,
@@ -56,6 +72,12 @@ export function useBroadcast(
   // Keep a ref so the main effect can read the initial viewerLang at mount time
   const viewerLangRef = useRef(viewerLang ?? null);
   viewerLangRef.current = viewerLang ?? null;
+
+  // Viewers on a language channel use the base channel for presence only (see attachConfigChannel)
+  const baseLangModeRef = useRef(false);
+  const configChannelRef = useRef<Ably.RealtimeChannel | null>(null);
+  const modeChainRef = useRef<Promise<void>>(Promise.resolve());
+  const announcedLangRef = useRef<string | null>(null); // language last announced through presence
 
   useEffect(() => {
     if (!isProd) {
@@ -119,9 +141,17 @@ export function useBroadcast(
     client.connection.on("failed", () => setConnected(false));
     client.connection.on("closed", () => setConnected(false));
 
+    // A viewer following the host reads captions and config from the base channel; a viewer on a language channel
+    // uses it for presence only. Neither needs the other viewers' presence events, only to announce itself.
+    const onLangChannel = role === "viewer" && !!viewerLangRef.current;
     const channelOptions: Ably.ChannelOptions =
-      role === "viewer" ? { params: { rewind: "10" } } : {};
+      role !== "viewer"
+        ? {}
+        : onLangChannel
+          ? { modes: ["PRESENCE"] }
+          : { params: { rewind: "10" }, modes: ["PRESENCE", "SUBSCRIBE"] };
     const channel = client.channels.get(channelName, channelOptions);
+    baseLangModeRef.current = onLangChannel;
     channelRef.current = channel;
 
     if (role === "viewer") {
@@ -142,9 +172,36 @@ export function useBroadcast(
         setLastMessage(data);
       });
 
-      channel.presence
-        .enter({ role: "viewer", lang: viewerLangRef.current ?? "host" })
-        .catch(() => {});
+      const enterPresence = () => {
+        announcedLangRef.current = viewerLangRef.current ?? "host";
+        return channel.presence
+          .enter({ role: "viewer", lang: announcedLangRef.current })
+          .catch(() => {});
+      };
+
+      if (onLangChannel) {
+        // Attach the config channel first so the config the host re-publishes for this join cannot be missed
+        attachConfigChannel(client, channelName, (data) => {
+          onMessageRef.current?.(data);
+          setLastMessage(data);
+        })
+          .then((c) => {
+            configChannelRef.current = c;
+          })
+          .catch(() => {
+            // Filtered attach failed: fall back to the full base channel so config still arrives
+            baseLangModeRef.current = false;
+            channel
+              .setOptions({
+                params: { rewind: "10" },
+                modes: ["PRESENCE", "SUBSCRIBE"],
+              })
+              .catch(() => {});
+          })
+          .then(enterPresence);
+      } else {
+        enterPresence();
+      }
     } else {
       // Host/sender
       channel.presence.enter({ role: "host" }).catch(() => {});
@@ -174,6 +231,7 @@ export function useBroadcast(
     return () => {
       channelRef.current = null;
       ablyClientRef.current = null;
+      configChannelRef.current = null;
       channel.unsubscribe();
       channel.presence.unsubscribe();
       channel.presence.leave().catch(() => {});
@@ -188,20 +246,57 @@ export function useBroadcast(
 
     // Keep presence up to date when the viewer changes language
     const baseChannel = channelRef.current;
-    if (baseChannel) {
+    if (baseChannel && announcedLangRef.current !== (viewerLang ?? "host")) {
+      announcedLangRef.current = viewerLang ?? "host";
       baseChannel.presence
-        .update({ role: "viewer", lang: viewerLang ?? "host" })
+        .update({ role: "viewer", lang: announcedLangRef.current })
         .catch(() => {});
     }
 
-    if (!viewerLang) return;
-
     const client = ablyClientRef.current;
+
+    // Move the base channel between "captions + config" (following the host) and "presence only" (language channel).
+    // Changes are applied one at a time so quick language switches always end in the right state.
+    if (client && baseChannel) {
+      const wantLangMode = !!viewerLang;
+      const channelName = `room:${sanitizedRoom}`;
+      modeChainRef.current = modeChainRef.current
+        .then(async () => {
+          if (wantLangMode === baseLangModeRef.current) return;
+          if (wantLangMode) {
+            const c = await attachConfigChannel(client, channelName, (data) => {
+              onMessageRef.current?.(data);
+              setLastMessage(data);
+            });
+            configChannelRef.current = c;
+            await baseChannel.setOptions({ modes: ["PRESENCE"] });
+            baseLangModeRef.current = true;
+          } else {
+            await baseChannel.setOptions({
+              params: { rewind: "10" },
+              modes: ["PRESENCE", "SUBSCRIBE"],
+            });
+            baseLangModeRef.current = false;
+            const c = configChannelRef.current;
+            configChannelRef.current = null;
+            if (c) {
+              c.unsubscribe();
+              c.detach().catch(() => {});
+            }
+          }
+        })
+        .catch(() => {
+          /* stay on the current attachment: captions and config keep arriving */
+        });
+    }
+
+    if (!viewerLang) return;
     if (!client) return;
 
     const perLangChannelName = `room:${sanitizedRoom}:lang:${viewerLang}`;
     const perLangChannel = client.channels.get(perLangChannelName, {
       params: { rewind: "10" },
+      modes: ["SUBSCRIBE"],
     });
 
     perLangChannel.subscribe("translation", (msg) => {

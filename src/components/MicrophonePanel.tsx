@@ -559,7 +559,21 @@ export function MicrophonePanel({
     if (langs.size > 0) {
       const batchId = currentBatchIdRef.current;
       for (const langCode of langs) {
-        if (langCode === targetLang) continue; // host's targetLang already on base channel
+        if (langCode === targetLang) {
+          // Viewers on the host's own language read it from their language channel (they no longer also read the
+          // base channel), so publish the translation we already have instead of translating again.
+          publishToLangRef.current(langCode, {
+            type: "translation",
+            chunk: text,
+            transcript: rawChunk,
+            sourceLang: sl,
+            targetLang,
+            isFinal: true,
+            seqId,
+            batchId,
+          });
+          continue;
+        }
         void translateAndPublishForLang(
           rawChunk,
           langCode,
