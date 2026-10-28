@@ -157,7 +157,7 @@ Both the host display and the viewer display use the same pacer, so the visual r
 
 ### Room isolation via scoped Ably tokens
 
-The `/api/ably-token` endpoint does not return a root API key to the client. It generates a short-lived Ably `TokenRequest` scoped to the specific room's channel (`room:{roomId}`). A viewer with a token for `room:cardiology-2025` cannot publish to or subscribe from `room:oncology-main` — the capability is enforced by Ably's auth layer, not by client-side code.
+The `/api/ably-token` endpoint does not return a root API key to the client. It generates a short-lived Ably `TokenRequest` scoped to the specific room's channel (`room:{roomId}`). A viewer with a token for `room:cardiology-2025` cannot publish to or subscribe from `room:oncology-main` — the capability is enforced by Ably's auth layer, not by client-side code. Only a request carrying a valid host session (the `host_session` cookie set by `/api/login`) gets publish rights; every other request gets a subscribe + presence token, so a viewer cannot inject captions.
 
 ### Dual Groq key rotation
 
