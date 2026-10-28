@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Mic,
   Square,
@@ -158,6 +159,14 @@ interface Props {
   roomId?: string;
   requestedLangs: ReadonlySet<string>;
   publishToLang: (lang: string, msg: BroadcastMessage) => void;
+  /**
+   * Host console layout. When BOTH slots are given, the component renders into them (portals) instead of its own card: the
+   * always-visible controls into `toolbarSlot` (top bar), the remaining settings into `drawerSlot` (menu drawer). The parent must
+   * create the elements once and never replace them (a new portal container would remount what is inside). Without them the
+   * component renders its single card, as before.
+   */
+  toolbarSlot?: HTMLElement | null;
+  drawerSlot?: HTMLElement | null;
 }
 
 export function MicrophonePanel({
@@ -166,6 +175,8 @@ export function MicrophonePanel({
   roomId,
   requestedLangs,
   publishToLang,
+  toolbarSlot,
+  drawerSlot,
 }: Props) {
   const store = useStore();
   const { devices, refresh: refreshDevices } = useAudioDevices();
@@ -915,6 +926,243 @@ export function MicrophonePanel({
     }
   };
 
+  // Host console layout (see Props): same state and handlers as the card below, laid out in two places. Order classes place the
+  // blocks in the top bar's flex row; the banners take their own full-width row.
+  if (toolbarSlot && drawerSlot) {
+    const barLabelClass = `${fieldLabelClass} !text-[11px] leading-4`;
+    return (
+      <>
+        {createPortal(
+          <>
+            {/* Audio input */}
+            <div className="order-[-3] min-w-[9rem] flex-[1.3_1_10rem] xl:order-[-2] xl:flex-[0.8_1_8rem] xl:max-w-[16rem]">
+              <div className="mb-1 flex h-4 items-center justify-between">
+                <label htmlFor="host-audio-input" className={barLabelClass}>
+                  Audio input
+                </label>
+                <button
+                  onClick={refreshDevices}
+                  title="Refresh audio devices"
+                  aria-label="Refresh audio devices"
+                  className="focus-ring rounded-md p-0.5 text-tertiary transition-colors hover:bg-[var(--surface-2)] hover:text-primary"
+                >
+                  <RefreshCw className="size-3" />
+                </button>
+              </div>
+              <div className="relative">
+                <select
+                  id="host-audio-input"
+                  value={selectedDeviceId}
+                  onChange={(e) => setSelectedDeviceId(e.target.value)}
+                  disabled={isRecording}
+                  className={`${selectClass} !h-9`}
+                >
+                  <option value="">Default microphone</option>
+                  {devices.map((d) => (
+                    <option key={d.deviceId} value={d.deviceId}>
+                      {d.label || `Microphone ${d.deviceId.slice(0, 6)}`}
+                    </option>
+                  ))}
+                </select>
+                <SelectChevron />
+              </div>
+            </div>
+
+            {/* Input language */}
+            <div className="order-[-2] min-w-[8rem] flex-[1_1_8rem] xl:order-[-1] xl:max-w-[13rem]">
+              <label
+                htmlFor="host-input-language"
+                className={`${barLabelClass} mb-1`}
+              >
+                Input language
+              </label>
+              <div className="relative">
+                <select
+                  id="host-input-language"
+                  value={selectedSrcLang}
+                  onChange={(e) => handleSrcLangChange(e.target.value)}
+                  className={`${selectClass} !h-9`}
+                >
+                  {SRC_LANGUAGES.map((l) => (
+                    <option key={l.bcp47} value={l.bcp47}>
+                      {l.name}
+                    </option>
+                  ))}
+                </select>
+                <SelectChevron />
+              </div>
+            </div>
+
+            {/* Engine fallback notice / error */}
+            {engineNotice && (
+              <div className="order-last flex basis-full items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-400/30 dark:bg-amber-500/10">
+                <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-300" />
+                <p className="text-[12px] text-amber-800 dark:text-amber-200">{engineNotice}</p>
+              </div>
+            )}
+            {error && (
+              <div className="order-last flex basis-full items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 dark:border-rose-400/30 dark:bg-rose-500/10">
+                <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-rose-600 dark:text-rose-300" />
+                <p className="text-[12px] text-rose-700 dark:text-rose-200">{error}</p>
+              </div>
+            )}
+
+            {/* Live controls: stop the AI voice, mute the host audio, start / stop. The stop button is always laid out (invisible while
+                the voice is silent) so nothing around it moves when it appears. */}
+            <div className="order-[-6] ml-auto flex shrink-0 items-center gap-2 xl:order-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={stopHostTts}
+                title="Stop speaking"
+                aria-label="Stop speaking"
+                className={`w-9 shrink-0 border border-emerald-200 !px-0 text-emerald-700 hover:border-emerald-300 dark:border-emerald-400/40 dark:text-emerald-300 ${
+                  store.isPlaying && !hostMuted ? "" : "invisible"
+                }`}
+              >
+                <VolumeX className="size-4 animate-pulse" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleHostMute}
+                title={hostMuted ? "Unmute host audio" : "Mute host audio"}
+                aria-label={hostMuted ? "Unmute host audio" : "Mute host audio"}
+                className={`w-9 shrink-0 border !px-0 transition-colors ${
+                  hostMuted
+                    ? "border-app text-tertiary hover:border-[var(--border-strong)] hover:text-secondary"
+                    : "border-brand-200 bg-brand-50 text-brand-600 hover:border-brand-300 hover:text-brand-700 dark:border-brand-400/40 dark:bg-brand-500/15 dark:text-brand-300 dark:hover:border-brand-300 dark:hover:text-brand-200"
+                }`}
+              >
+                {hostMuted ? (
+                  <VolumeX className="size-4" />
+                ) : (
+                  <Volume2 className="size-4" />
+                )}
+              </Button>
+
+              <Button
+                variant={isRecording ? "danger" : "primary"}
+                size="sm"
+                onClick={toggle}
+                className="w-48 whitespace-nowrap !px-3 !text-[13px]"
+              >
+                {isRecording ? (
+                  <>
+                    <Square className="size-4" /> Stop
+                  </>
+                ) : (
+                  <>
+                    <Mic className="size-4" /> Start Live Translation
+                  </>
+                )}
+              </Button>
+            </div>
+          </>,
+          toolbarSlot,
+        )}
+
+        {createPortal(
+          <GlassCard glow="blue" className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-[14px] font-semibold text-primary">Microphone</h2>
+                <p className="mt-1 text-[11px] text-tertiary">
+                  Live · {engine === "whisper" ? "Groq Whisper" : "Web Speech API"}
+                </p>
+              </div>
+              <div
+                className={`grid size-10 place-items-center rounded-xl ${
+                  isRecording
+                    ? "bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300"
+                    : "bg-[var(--surface-2)] text-tertiary"
+                }`}
+              >
+                <Mic className="size-[18px]" />
+              </div>
+            </div>
+
+            {/* Recognition engine toggle */}
+            <div className="space-y-2">
+              <label className={fieldLabelClass}>Recognition</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => handleEngineChange("whisper")}
+                  disabled={isRecording}
+                  className={`focus-ring rounded-[10px] border px-3 py-2.5 text-[12px] font-semibold transition-colors
+                    disabled:cursor-not-allowed disabled:opacity-50 ${
+                      engine === "whisper"
+                        ? "border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-400/40 dark:bg-brand-500/15 dark:text-brand-200"
+                        : "border-app bg-[var(--surface)] text-secondary hover:border-[var(--border-strong)]"
+                    }`}
+                >
+                  Whisper{" "}
+                  <span className="text-[10px] font-medium opacity-70">
+                    (accurate)
+                  </span>
+                </button>
+                <button
+                  onClick={() => handleEngineChange("browser")}
+                  disabled={isRecording}
+                  className={`focus-ring rounded-[10px] border px-3 py-2.5 text-[12px] font-semibold transition-colors
+                    disabled:cursor-not-allowed disabled:opacity-50 ${
+                      engine === "browser"
+                        ? "border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-400/40 dark:bg-brand-500/15 dark:text-brand-200"
+                        : "border-app bg-[var(--surface)] text-secondary hover:border-[var(--border-strong)]"
+                    }`}
+                >
+                  Browser{" "}
+                  <span className="text-[10px] font-medium opacity-70">
+                    (instant)
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Translation quality indicator */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-tertiary">Quality:</span>
+              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                GTX primary · Groq fallback
+              </span>
+            </div>
+
+            {/* AI Voice selector */}
+            <VoiceSelector
+              tts={tts}
+              targetLang={store.targetLang}
+              selectedVoiceURI={selectedVoiceURI}
+              onChange={setSelectedVoiceURI}
+            />
+
+            {/* Visualizer */}
+            {visualStream && (
+              <div className="flex h-12 items-center justify-center rounded-xl bg-[var(--surface-2)]">
+                <AudioVisualizer
+                  stream={visualStream}
+                  isActive={isRecording}
+                  color="blue"
+                  bars={24}
+                  height={32}
+                />
+              </div>
+            )}
+
+            {isRecording && (
+              <p className="text-center text-[11px] text-tertiary">
+                {hostMuted
+                  ? "Translating — host audio muted"
+                  : "Speaking — translating live as you talk"}
+              </p>
+            )}
+          </GlassCard>,
+          drawerSlot,
+        )}
+      </>
+    );
+  }
+
   return (
     <GlassCard glow="blue" className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -964,9 +1212,9 @@ export function MicrophonePanel({
         </div>
       </div>
 
-      {/* Speaking language selector */}
+      {/* Input language selector */}
       <div className="space-y-2">
-        <label className={fieldLabelClass}>Speaking language</label>
+        <label className={fieldLabelClass}>Input language</label>
         <div className="relative">
           <select
             value={selectedSrcLang}
@@ -1166,10 +1414,10 @@ function VoiceSelector({
             className={selectClass}
           >
             <option value="">
-              Auto — best match for {tgtInfo?.name ?? "target language"}
+              Auto — best match for {tgtInfo?.name ?? "output language"}
             </option>
             {langVoices.length > 0 && (
-              <optgroup label={`── ${tgtInfo?.name ?? "Target"} voices`}>
+              <optgroup label={`── ${tgtInfo?.name ?? "Output"} voices`}>
                 {langVoices.map((v) => (
                   <option key={v.voiceURI} value={v.voiceURI}>
                     {v.name}
