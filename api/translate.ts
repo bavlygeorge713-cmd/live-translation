@@ -68,7 +68,7 @@ async function callGroq(
         { role: "user", content: text },
       ],
       temperature: 0,
-      max_tokens: 1024,
+      max_tokens: 2048,
     }),
   });
   if (res.status === 429) {
