@@ -14,7 +14,7 @@ import { useRef, useCallback } from "react";
 
 const SILENCE_MS = 450; // was 600 — close on real pauses sooner
 const MIN_WINDOW_MS = 2500; // windows align with sentence boundaries
-const MAX_WINDOW_MS = 7000;
+const MAX_WINDOW_MS = 7000; // hard cap, counted from speech onset (leading silence does not use it up)
 const TICK_MS = 100;
 const TIMESLICE_MS = 250;
 const NOISE_FLOOR_SAMPLES = 50; // rolling 5s of 100ms RMS samples
@@ -29,6 +29,24 @@ const EARLY_CLOSE_AGE_MS = 1800; // ...only if window is at least this old
 // reachable without hair-triggering on a transient burst.
 const MAX_FAIL_STREAK = 6; // consecutive NON-429 failures → onUnavailable
 const MAX_RATE_LIMIT_STREAK = 4; // consecutive windows fully lost to 429 → onUnavailable
+// Whisper invents a few stock phrases (or just a lone punctuation mark) from near-silence. A window that held at most
+// this many above-threshold ticks (≈0.4 s of sound) AND came back as exactly one of these is discarded instead of
+// shown as a caption.
+const NEAR_SILENT_TICKS = 4;
+const SILENCE_HALLUCINATIONS = new Set([
+  "thank you",
+  "thanks for watching",
+  "thank you for watching",
+  "roll through",
+  "you",
+]);
+const isSilenceHallucination = (text: string): boolean => {
+  const bare = text
+    .trim()
+    .toLowerCase()
+    .replace(/^[\s"'“”‘’.!?…,]+|[\s.!?…,"'“”‘’]+$/g, "");
+  return (bare === "" && text.trim() !== "") || SILENCE_HALLUCINATIONS.has(bare);
+};
 const RATE_LIMIT_RETRY_MS = 2000; // hold a 429'd window and retry once after this
 
 interface AudioWindow {
@@ -36,6 +54,8 @@ interface AudioWindow {
   chunks: Blob[];
   startTs: number;
   hadSpeech: boolean;
+  speechStartTs: number; // first tick above the speech threshold (0 = none yet)
+  speechTicks: number; // ticks above the speech threshold
   seq: number;
   sendOnStop: boolean;
   settled: boolean;
@@ -195,7 +215,9 @@ export function useWhisperSTT() {
       if (r.ok) {
         failStreakRef.current = 0;
         rateLimitStreakRef.current = 0;
-        settleWindow(w, r.text);
+        const invented =
+          w.speechTicks <= NEAR_SILENT_TICKS && isSilenceHallucination(r.text);
+        settleWindow(w, invented ? "" : r.text);
         return;
       }
       settleWindow(w, "");
@@ -262,6 +284,8 @@ export function useWhisperSTT() {
       chunks: [],
       startTs: Date.now(),
       hadSpeech: false,
+      speechStartTs: 0,
+      speechTicks: 0,
       seq: windowSeqRef.current++,
       sendOnStop: false,
       settled: false,
@@ -344,18 +368,25 @@ export function useWhisperSTT() {
     const w = currentRef.current;
     if (rms >= threshold) {
       lastSpeechTsRef.current = now;
-      if (w) w.hadSpeech = true;
+      if (w) {
+        w.hadSpeech = true;
+        w.speechTicks++;
+        if (!w.speechStartTs) w.speechStartTs = now;
+      }
     }
     if (!w) return;
 
     const age = now - w.startTs;
+    // The hard cap counts from speech onset, so a pause at the start of a window (the rest of the gap that closed the
+    // previous one) no longer eats into the 7 s a sentence gets before it is cut.
+    const speechAge = w.speechStartTs ? now - w.speechStartTs : 0;
     const silence = now - lastSpeechTsRef.current;
     const strongSilence = now - lastAboveFloorTsRef.current;
 
     if (
       w.hadSpeech &&
       ((silence >= SILENCE_MS && age >= MIN_WINDOW_MS) ||
-        age >= MAX_WINDOW_MS ||
+        speechAge >= MAX_WINDOW_MS ||
         (strongSilence >= EARLY_CLOSE_SILENCE_MS && age >= EARLY_CLOSE_AGE_MS))
     ) {
       closeWindow(true);
