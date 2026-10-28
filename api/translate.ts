@@ -54,7 +54,7 @@ async function callGroq(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
+      model: "openai/gpt-oss-20b",
       messages: [
         {
           role: "system",
@@ -68,7 +68,9 @@ async function callGroq(
         { role: "user", content: text },
       ],
       temperature: 0,
-      max_tokens: 150,
+      max_tokens: 1024,
+      // gpt-oss is a reasoning model; "low" keeps its reasoning short so the answer always fits in max_tokens
+      reasoning_effort: "low",
     }),
   });
   if (res.status === 429) {
