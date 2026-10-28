@@ -1,3 +1,5 @@
+import { isHostSession } from "./_hostAuth.js";
+
 const cleanEnv = (v: string | undefined) => v?.replace(/^﻿/, "").trim() ?? "";
 
 function getGroqKeys(): string[] {
@@ -86,6 +88,12 @@ async function callGroq(
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     res.status(405).end();
+    return;
+  }
+
+  // Only the signed-in host console calls this endpoint (viewers never do).
+  if (!(await isHostSession(req.headers?.cookie))) {
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
 

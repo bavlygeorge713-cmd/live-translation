@@ -1,6 +1,8 @@
 // Groq Whisper transcription proxy. Edge runtime so req.formData() parses
 // multipart natively and audio blobs (~30-60KB opus per 3.5s window, well
 // under the ~4MB edge body limit) pass straight through to Groq.
+import { isHostSession } from "./_hostAuth.js";
+
 export const config = { runtime: "edge" };
 
 const cleanEnv = (v: string | undefined) => v?.replace(/^﻿/, "").trim() ?? "";
@@ -20,6 +22,10 @@ const json = (status: number, body: unknown) =>
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") return json(405, { error: "POST only" });
+
+  // Only the signed-in host console calls this endpoint (viewers never do).
+  if (!(await isHostSession(req.headers.get("cookie"))))
+    return json(401, { error: "Unauthorized" });
 
   const keys = getGroqKeys();
   if (keys.length === 0)

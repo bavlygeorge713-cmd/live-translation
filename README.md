@@ -161,7 +161,7 @@ The `/api/ably-token` endpoint does not return a root API key to the client. It 
 
 ### Dual Groq key rotation
 
-The free tier on Groq has a requests-per-minute ceiling that a single active room can reach if the speaker talks quickly. Both `/api/transcribe` and `/api/translate` accept two independent API keys (`GROQ_API_KEY_1`, `GROQ_API_KEY_2`) and rotate between them on 429 responses. The transcription endpoint also holds a rate-limited window for 2 s and retries once before declaring the window failed — this handles short bursts without triggering an engine fallback.
+The free tier on Groq has a requests-per-minute ceiling that a single active room can reach if the speaker talks quickly. Both `/api/transcribe` and `/api/translate` require the host session (the `host_session` cookie set by `/api/login`; anything else gets HTTP 401) — only the host console calls them. They accept two independent API keys (`GROQ_API_KEY_1`, `GROQ_API_KEY_2`) and rotate between them on 429 responses. The transcription endpoint also holds a rate-limited window for 2 s and retries once before declaring the window failed — this handles short bursts without triggering an engine fallback.
 
 ---
 
