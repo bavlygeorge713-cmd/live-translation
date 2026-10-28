@@ -74,33 +74,33 @@ async function translateAndPublishForLang(
   let translated = "";
 
   try {
-    const res = await fetch("/api/translate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: rawChunk, to: langCode, srcHint, roomId }),
-    });
+    const url =
+      `https://translate.googleapis.com/translate_a/single` +
+      `?client=gtx&sl=${encodeURIComponent(sourceLangCode)}&tl=${encodeURIComponent(langCode)}&dt=t` +
+      `&q=${encodeURIComponent(rawChunk)}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(1200) });
     if (res.ok) {
-      const data = (await res.json()) as { translation?: string };
-      translated = data.translation?.trim() ?? "";
+      const data = (await res.json()) as any[][][];
+      translated = ((data[0] ?? []) as any[])
+        .map((item: any) => item[0] as string)
+        .filter(Boolean)
+        .join("")
+        .trim();
     }
   } catch {
-    /* fall through to GTX */
+    /* fall through to Groq */
   }
 
   if (!translated) {
     try {
-      const url =
-        `https://translate.googleapis.com/translate_a/single` +
-        `?client=gtx&sl=${encodeURIComponent(sourceLangCode)}&tl=${encodeURIComponent(langCode)}&dt=t` +
-        `&q=${encodeURIComponent(rawChunk)}`;
-      const res = await fetch(url);
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: rawChunk, to: langCode, srcHint, roomId }),
+      });
       if (res.ok) {
-        const data = (await res.json()) as any[][][];
-        translated = ((data[0] ?? []) as any[])
-          .map((item: any) => item[0] as string)
-          .filter(Boolean)
-          .join("")
-          .trim();
+        const data = (await res.json()) as { translation?: string };
+        translated = data.translation?.trim() ?? "";
       }
     } catch {
       /* drop chunk if both fail */
