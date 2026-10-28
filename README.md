@@ -27,7 +27,7 @@ The host presses record, speaks into their microphone, and the system transcribe
 
 - **Real-time multi-viewer broadcast** — unlimited viewers via Ably pub/sub; host shares a QR code or URL
 - **Hybrid STT pipeline** — Web Speech API provides an instant live draft while Groq Whisper transcribes the confirmed chunk in parallel, replacing the draft when the accurate result arrives
-- **Three-tier translation fallback** — Google Translate (primary, 1.2 s timeout) → Groq LLaMA 3.1-8b (fallback) → GTX retry → raw source text; translation never silently disappears
+- **Three-tier translation fallback** — Google Translate (primary, 1.2 s timeout) → Groq GPT-OSS 20B (fallback) → GTX retry → raw source text; translation never silently disappears
 - **Word-pacing queue** — chunk text is drip-fed word-by-word at 5 words/sec so the display feels like live captions rather than batch flashes
 - **Per-viewer language override** — each viewer can select their own target language independently of the host's chosen language
 - **RTL support** — Arabic, Hebrew, Persian, and Urdu render right-to-left automatically
@@ -60,7 +60,7 @@ Microphone
                                   Translation pipeline
                                   ┌──────────────────────────────────┐
                                   │ 1. Google Translate (1.2 s limit) │  primary
-                                  │ 2. Groq LLaMA 3.1-8b (3 s limit) │  fallback
+                                  │ 2. Groq GPT-OSS 20B (3 s limit)  │  fallback
                                   │ 3. GTX retry after 1 s            │  retry
                                   │ 4. raw source text                │  last resort
                                   └──────────────────────────────────┘
@@ -110,7 +110,7 @@ VIEWER SIDE ──────────────────────�
 | Speech recognition (draft) | Web Speech API (browser-native) |
 | Speech recognition (final) | Groq Whisper v3 Turbo via `/api/transcribe` |
 | Translation (primary) | Google Translate public endpoint |
-| Translation (fallback) | Groq LLaMA 3.1-8b via `/api/translate` |
+| Translation (fallback) | Groq GPT-OSS 20B via `/api/translate` |
 | Real-time transport | Ably pub/sub (production), WebSocket relay (dev) |
 | Serverless functions | Vercel (Node.js + Edge Runtime) |
 | Video export | `MediaRecorder` + `mp4-muxer` |
