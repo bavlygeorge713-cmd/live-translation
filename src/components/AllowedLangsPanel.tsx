@@ -6,6 +6,7 @@ import type { BroadcastMessage } from "@/hooks/useBroadcast";
 const LS_ALLOWED = "ct_allowed_langs";
 const LS_MAX = "ct_max_langs_count";
 const DEFAULT_MAX = 5;
+const REPUBLISH_WINDOW_MS = 2000;
 
 interface Props {
   send: (msg: BroadcastMessage) => void;
@@ -36,12 +37,29 @@ export function AllowedLangsPanel({ send, viewerCount }: Props) {
     sendRef.current({ type: "config", allowedLangs: langs, maxCount: max });
   };
 
-  // Re-publish config whenever a viewer joins so late-joiners receive current config
+  // Re-publish config when the audience changes so late-joiners receive current config. Each publish reaches every viewer present, so one per
+  // join meant ~N²/2 deliveries while a hall filled: send at most one per window, always the latest state (the first change after a quiet
+  // spell goes out at once). Language and Max changes below stay immediate.
+  const lastRepublishRef = useRef(0);
+  const republishTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (viewerCount > 0) {
-      publishConfig(allowedLangsRef.current, maxCountRef.current);
-    }
+    if (viewerCount <= 0 || republishTimerRef.current) return;
+    republishTimerRef.current = setTimeout(
+      () => {
+        republishTimerRef.current = null;
+        lastRepublishRef.current = Date.now();
+        publishConfig(allowedLangsRef.current, maxCountRef.current);
+      },
+      Math.max(0, lastRepublishRef.current + REPUBLISH_WINDOW_MS - Date.now()),
+    );
   }, [viewerCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(
+    () => () => {
+      if (republishTimerRef.current) clearTimeout(republishTimerRef.current);
+      republishTimerRef.current = null;
+    },
+    [],
+  );
 
   const toggleLang = (code: string) => {
     setAllowedLangs((prev) => {
@@ -51,6 +69,7 @@ export function AllowedLangsPanel({ send, viewerCount }: Props) {
           ? [...prev, code]
           : prev;
       localStorage.setItem(LS_ALLOWED, JSON.stringify(next));
+      allowedLangsRef.current = next; // a pending re-publish must not send the old list after this one
       publishConfig(next, maxCountRef.current);
       return next;
     });
