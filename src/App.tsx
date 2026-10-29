@@ -89,7 +89,6 @@ export default function App({ roomId }: AppProps) {
         }
       >
         <DrawerRoomCard roomName={roomName} roomId={roomId} />
-        <QRSharePanel connected={connected} viewerCount={viewerCount} />
         <AllowedLangsPanel send={send} viewerCount={viewerCount} />
         {/* MicrophonePanel: recognition, quality, AI voice, level meter */}
         <SlotHost slot={drawerSlot} />
@@ -117,20 +116,26 @@ export default function App({ roomId }: AppProps) {
       />
 
       <main className="mx-auto w-full max-w-[1900px] flex-1 p-4 xl:p-5 2xl:p-6">
-        {/* Caption canvas (the drawer overlays it, so it never changes size) */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="mx-auto w-full min-w-0 max-w-[1100px]"
-        >
-          <SubtitleCanvas
-            ref={canvasRef}
-            micStream={micStream}
-            isRecording={recIsRecording}
-            recDuration={recDuration}
-          />
-        </motion.div>
+        {/* The caption canvas stays centred (the drawer overlays it, so it never changes size). From xl up the share panel takes the
+            right-hand gutter, the left one stays empty; below xl it sits under the canvas. It is outside the canvas div that gets recorded. */}
+        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(20rem,1fr)_minmax(0,1100px)_minmax(20rem,1fr)]">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mx-auto w-full min-w-0 max-w-[1100px] xl:col-start-2 xl:row-start-1"
+          >
+            <SubtitleCanvas
+              ref={canvasRef}
+              micStream={micStream}
+              isRecording={recIsRecording}
+              recDuration={recDuration}
+            />
+          </motion.div>
+          <div className="mx-auto w-full max-w-[20rem] xl:col-start-3 xl:row-start-1 xl:mx-0">
+            <QRSharePanel connected={connected} viewerCount={viewerCount} />
+          </div>
+        </div>
 
         <footer className="pb-2 pt-6 text-center text-[11px] text-tertiary">
           {roomName
