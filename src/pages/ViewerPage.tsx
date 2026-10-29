@@ -126,7 +126,7 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
     const { text, index, lang } = ttsQueueRef.current.shift()!;
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = lang;
-    utter.rate = 1.25;
+    utter.rate = 1.1;
 
     const voices = window.speechSynthesis.getVoices();
     const uri = selectedVoiceURIRef.current;
@@ -249,7 +249,7 @@ export function ViewerPage({ roomId }: ViewerPageProps) {
 
     ttsBusyRef.current = false;
     ttsQueueRef.current = [];
-    lastSpokenIndexRef.current = -1;
+    lastSpokenIndexRef.current = confirmedLinesRef.current.length - 1;
     setAudioUnlocked(true);
     setTimeout(() => drainTtsRef.current(), 150);
   };
